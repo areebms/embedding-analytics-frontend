@@ -147,7 +147,7 @@ button.secondary{ background:#f8fafc; border:1px solid var(--line); border-radiu
 .thTop{ font-weight:900; }
 .thSub{ color:var(--muted); font-size:12px; margin-top:2px; }
 .termCell{ font-weight:800; color:#1d4ed8; }
-.numCell .sim{ font-weight:800; }
+.numCell .similarity{ font-weight:800; }
 .numCell .meta{ color:var(--muted); font-size:12px; margin-top:2px; }
 .missing{ color: #94a3b8; }
 .activeRow{ background:#f1f5ff; }

@@ -7,22 +7,33 @@ import {
   TableRow,
   Typography,
   Box,
-  Paper,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
-/**
- * ResultsTable Component
- * Displays similarity data in a tabular format with sortable columns
- */
-export default function ResultsTable({ rows, selectedBooks }) {
 
-  // ============================================================================
-  // Render Helpers
-  // ============================================================================
+export default function ResultsTable({ rows, selectedBooks, calcStats }) {
 
-  /**
-   * Render table header with book columns
-   */
+  const renderBookTooltip = (bookId) => {
+    const stats = calcStats?.[bookId];
+
+    if (!stats) {
+      return `Book ID: ${bookId}`;
+    }
+
+    return (
+      <Box>
+        <Typography variant="body2" fontWeight={600}>
+          Terms removed: {stats.removed}
+        </Typography>
+        <Typography variant="caption" color="inherit">
+          Showing {stats.shown} of {stats.total}
+        </Typography>
+      </Box>
+    );
+  };
+
   const renderTableHeader = () => (
     <TableHead>
       <TableRow>
@@ -37,7 +48,19 @@ export default function ResultsTable({ rows, selectedBooks }) {
         </TableCell>
         {selectedBooks.map((book) => (
           <TableCell key={book.id} sx={{ fontWeight: 700 }}>
-            {book.label}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <span>{book.label}</span>
+              <Tooltip title={renderBookTooltip(book.id)} arrow>
+                
+                <IconButton
+                  size="small"
+                  aria-label={`Book ID ${book.id}`}
+                  sx={{ color: "text.secondary" }}
+                >
+                  <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </TableCell>
         ))}
       </TableRow>
@@ -94,10 +117,10 @@ export default function ResultsTable({ rows, selectedBooks }) {
   const renderCellWithData = (data) => (
     <Box>
       <Typography fontWeight={700} variant="body2">
-        {data.sim.toFixed(3)}
+        {data.similarity.toFixed(3)}
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        {data.conf.toFixed(1)}% (n={data.n})
+        {data.coherence.toFixed(1)}% (n={data.n})
       </Typography>
     </Box>
   );

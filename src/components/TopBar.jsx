@@ -71,6 +71,7 @@ export default function TopBar({
     >
       <Toolbar sx={{ gap: 2, justifyContent: "space-between" }}>
         {/* Search Box */}
+        Embedding Analytics
         <TextField
           value={term}
           onChange={handleTermChange}

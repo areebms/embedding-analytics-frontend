@@ -71,12 +71,12 @@ function createChartDatasets(rows, selectedBooks) {
         if (!bookData) return null;
 
         return {
-          x: bookData.sim,
+          x: bookData.similarity,
           y: rowIndex,
           term: row.term,
           bookId: book.id,
           n: bookData.n,
-          conf: bookData.conf,
+          coherence: bookData.coherence,
         };
       })
       .filter(Boolean);
@@ -116,8 +116,8 @@ function createChartOptions(rows) {
             return [
               `Term: ${point.term}`,
               `Similarity: ${point.x.toFixed(3)}`,
-              `Occurrences: ${point.n}`,
-              `Confidence: ${point.conf.toFixed(1)}%`,
+              `Occurrence: ${point.n}`,
+              `Coherence: ${point.coherence.toFixed(1)}%`,
             ];
           },
         },

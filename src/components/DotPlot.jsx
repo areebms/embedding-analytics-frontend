@@ -83,7 +83,7 @@ export default function DotPlot({ rows, selectedBooks}) {
                 const bi = bookIndex.get(bookId);
                 if (bi === undefined) return null;
 
-                const cx = x(v.sim);
+                const cx = x(v.similarity);
                 const cy = y;
                 return (
                   <circle
@@ -97,9 +97,9 @@ export default function DotPlot({ rows, selectedBooks}) {
                       setHover({
                         term: r.term,
                         bookId,
-                        sim: v.sim,
+                        similarity: v.similarity,
                         n: v.n,
-                        conf: v.conf,
+                        coherence: v.coherence,
                       })
                     }
                     onMouseLeave={() => setHover(null)}
@@ -117,9 +117,9 @@ export default function DotPlot({ rows, selectedBooks}) {
             <b>{hover.term}</b>
           </div>
           <div className="ttRow">Book: {hover.bookId}</div>
-          <div className="ttRow">Similarity: {hover.sim.toFixed(3)}</div>
+          <div className="ttRow">Similarity: {hover.similarity.toFixed(3)}</div>
           <div className="ttRow">Occurrences: {hover.n}</div>
-          <div className="ttRow">Confidence: {hover.conf.toFixed(1)}%</div>
+          <div className="ttRow">Confidence: {hover.coherence.toFixed(1)}%</div>
         </div>
       )}
     </div>

@@ -43,14 +43,7 @@ const theme = createTheme({
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-/**
- * Main application component for term similarity analysis across books
- */
 export default function App() {
-  // ============================================================================
-  // State Management
-  // ============================================================================
-
   // Search and filtering state
   const [term, setTerm] = useState("market");
   const [selectedBookIds, setSelectedBookIds] = useState([3300]);
@@ -59,14 +52,11 @@ export default function App() {
 
   // Data state
   const [allBooks, setAllBooks] = useState([]);
-  const [baseRows, setBaseRows] = useState([]);
+  const [calculatedRowData, setCalculatedRowData] = useState([]);
+  const [bookCalculationStats, setBookCalculationStats] = useState({});
   const [rowsError, setRowsError] = useState(null);
   const [similarityCache, setSimilarityCache] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-
-  // ============================================================================
-  // Data Fetching
-  // ============================================================================
 
   /**
    * Fetch all available books on component mount
@@ -117,7 +107,7 @@ export default function App() {
 
         // All data is already cached
         if (pendingBookIds.length === 0) {
-          computeAndSetRows(selectedBookIds, similarityCache);
+          computeRows(selectedBookIds, similarityCache);
           setIsLoading(false);
           return;
         }
@@ -128,7 +118,7 @@ export default function App() {
         if (!cancelled) {
           console.error("Error loading similarity data:", error);
           setRowsError(error);
-          setBaseRows([]);
+          setCalculatedRowData([]);
           setIsLoading(false);
         }
       }
@@ -138,7 +128,7 @@ export default function App() {
     if (selectedBookIds.length) {
       loadSimilarityData();
     } else {
-      setBaseRows([]);
+      setCalculatedRowData([]);
       setIsLoading(false);
     }
 
@@ -184,7 +174,7 @@ export default function App() {
           }
 
           // Compute rows with the updated cache
-          computeAndSetRows(selectedBookIds, updatedCache);
+          computeRows(selectedBookIds, updatedCache);
           setIsLoading(false);
 
           return updatedCache;
@@ -194,7 +184,7 @@ export default function App() {
       if (!cancelled) {
         console.error("Error fetching missing similarity data:", error);
         setRowsError(error);
-        setBaseRows([]);
+        setCalculatedRowData([]);
         setIsLoading(false);
       }
     }
@@ -208,52 +198,63 @@ export default function App() {
    * Compute rows from cached similarity data
    * Groups data by term and calculates statistics across selected books
    */
-  const computeAndSetRows = (bookIds, cache) => {
-    // Gather cached data for selected books
-    const bookResults = bookIds.map((bookId) => ({
-      bookId,
-      items: cache[bookId] || [],
-    }));
-
+  const computeRows = (bookIds, cache) => {
     // Group similarity data by term
     const termDataMap = new Map();
+    const bookData = {};
 
-    for (const { bookId, items } of bookResults) {
-      for (const item of items) {
-        const termKey = item.term;
+    const getOrCreateTermRow = (term) => {
+      if (!termDataMap.has(term)) {
+        termDataMap.set(term, { term, byBook: {} });
+      }
+      return termDataMap.get(term);
+    };
 
-        // Initialize term entry if it doesn't exist
-        if (!termDataMap.has(termKey)) {
-          termDataMap.set(termKey, {
-            term: termKey,
-            byBook: {},
-          });
-        }
-
-        // Add this book's data for the term
-        termDataMap.get(termKey).byBook[bookId] = {
-          sim: Number(item.similarity),
+    for (const bookId of bookIds) {
+      bookData[bookId] = { total: cache[bookId].length, removed: 0 };
+      for (const item of cache[bookId] || []) {
+        const row = getOrCreateTermRow(item.term);
+        row.byBook[bookId] = {
+          similarity: Number(item.similarity),
           n: Number(item.count),
-          conf: Number(item.coherence) * 100,
+          coherence: Number(item.coherence) * 100,
         };
       }
     }
 
     // Calculate aggregate statistics for each term
-    const rows = Array.from(termDataMap.values()).map((row) => {
-      const similarities = Object.values(row.byBook).map((data) => data.sim);
+    const rows = Array.from(termDataMap.values())
+      .map((row) => {
+        const similarities = Object.values(row.byBook).map(
+          (data) => data.similarity,
+        );
+        const total = similarities.reduce(
+          (sum, similarity) => sum + similarity,
+          0,
+        );
+        const count = similarities.length;
 
-      const avg = similarities.length
-        ? similarities.reduce((sum, sim) => sum + sim, 0) / similarities.length
-        : 0;
+        return {
+          ...row,
+          avg: count ? total / count : 0,
+          max: count ? Math.max(...similarities) : 0,
+          min: count ? Math.min(...similarities) : 0,
+        };
+      })
+      .filter((row) => {
+        const removableBookIds = bookIds.filter(
+          (bookId) => (row.byBook[bookId]?.n ?? 0) < 5,
+        );
+        if (removableBookIds.length !== selectedBookIds.length) {
+          selectedBookIds.forEach((bookId) => {
+            bookData[bookId]["removed"] = bookData[bookId]["removed"] + 1;
+          });
+        }
+        return removableBookIds.length !== selectedBookIds.length;
+      });
 
-      const max = similarities.length ? Math.max(...similarities) : 0;
-      const min = similarities.length ? Math.min(...similarities) : 0;
-
-      return { ...row, avg, max, min };
-    });
-
-    setBaseRows(rows);
+    setCalculatedRowData(rows);
+    setBookCalculationStats(bookData)
   };
 
   // ============================================================================
@@ -272,12 +273,12 @@ export default function App() {
    * Sort and limit rows based on current ranking and display preferences
    */
   const displayRows = useMemo(() => {
-    const sortedRows = [...baseRows].sort((a, b) => {
+    const sortedRows = [...calculatedRowData].sort((a, b) => {
       return (b[rankBy] ?? 0) - (a[rankBy] ?? 0);
     });
 
     return sortedRows.slice(0, topN);
-  }, [baseRows, rankBy, topN]);
+  }, [calculatedRowData, rankBy, topN]);
 
   // ============================================================================
   // Render
@@ -317,7 +318,7 @@ export default function App() {
 
           {/* Table Panel */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: 3 }}>
-            <ResultsTable rows={displayRows} selectedBooks={selectedBooks} />
+            <ResultsTable rows={displayRows} selectedBooks={selectedBooks} calcStats={bookCalculationStats} />
           </Paper>
         </Container>
       </Box>
