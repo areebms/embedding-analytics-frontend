@@ -201,7 +201,6 @@ export default function App() {
   const computeRows = (bookIds, cache) => {
     // Group similarity data by term
     const termDataMap = new Map();
-    const bookData = {};
 
     const getOrCreateTermRow = (term) => {
       if (!termDataMap.has(term)) {
@@ -211,7 +210,6 @@ export default function App() {
     };
 
     for (const bookId of bookIds) {
-      bookData[bookId] = { total: cache[bookId].length, removed: 0 };
       for (const item of cache[bookId] || []) {
         const row = getOrCreateTermRow(item.term);
         row.byBook[bookId] = {
@@ -223,38 +221,25 @@ export default function App() {
     }
 
     // Calculate aggregate statistics for each term
-    const rows = Array.from(termDataMap.values())
-      .map((row) => {
-        const similarities = Object.values(row.byBook).map(
-          (data) => data.similarity,
-        );
-        const total = similarities.reduce(
-          (sum, similarity) => sum + similarity,
-          0,
-        );
-        const count = similarities.length;
+    const rows = Array.from(termDataMap.values()).map((row) => {
+      const similarities = Object.values(row.byBook).map(
+        (data) => data.similarity,
+      );
+      const total = similarities.reduce(
+        (sum, similarity) => sum + similarity,
+        0,
+      );
+      const count = similarities.length;
 
-        return {
-          ...row,
-          avg: count ? total / count : 0,
-          max: count ? Math.max(...similarities) : 0,
-          min: count ? Math.min(...similarities) : 0,
-        };
-      })
-      .filter((row) => {
-        const removableBookIds = bookIds.filter(
-          (bookId) => (row.byBook[bookId]?.n ?? 0) < 5,
-        );
-        if (removableBookIds.length !== selectedBookIds.length) {
-          selectedBookIds.forEach((bookId) => {
-            bookData[bookId]["removed"] = bookData[bookId]["removed"] + 1;
-          });
-        }
-        return removableBookIds.length !== selectedBookIds.length;
-      });
+      return {
+        ...row,
+        avg: count ? total / count : 0,
+        max: count ? Math.max(...similarities) : 0,
+        min: count ? Math.min(...similarities) : 0,
+      };
+    });
 
     setCalculatedRowData(rows);
-    setBookCalculationStats(bookData)
   };
 
   // ============================================================================
@@ -272,13 +257,63 @@ export default function App() {
   /**
    * Sort and limit rows based on current ranking and display preferences
    */
-  const displayRows = useMemo(() => {
+  const displayRowsData = useMemo(() => {
+    const bookData = {};
+    const removedTerms = [];
+    selectedBookIds.forEach((bookId) => {
+      bookData[bookId] = {
+        total: similarityCache[bookId]?.length ?? 0,
+        removed: 0,
+        shown: topN,
+      };
+    });
+
+    const shouldKeepRow = (row) => {
+      const hasAllBooks = selectedBookIds.every((bookId) => row.byBook[bookId]);
+      const meetsMinCount = selectedBookIds.every(
+        (bookId) => (row.byBook[bookId]?.n ?? 0) >= 5,
+      );
+      return hasAllBooks && meetsMinCount;
+    };
+
     const sortedRows = [...calculatedRowData].sort((a, b) => {
       return (b[rankBy] ?? 0) - (a[rankBy] ?? 0);
     });
 
-    return sortedRows.slice(0, topN);
-  }, [calculatedRowData, rankBy, topN]);
+    const filteredRows = sortedRows.filter((row) => {
+      const shouldKeep = shouldKeepRow(row);
+      if (!shouldKeep) {
+        removedTerms.push(row.term);
+      }
+      return shouldKeep;
+    });
+
+    const filteredSlicedRows = filteredRows.slice(0, topN);
+    const slicedRows = sortedRows.slice(0, topN);
+
+    selectedBookIds.forEach((bookId) => {
+      bookData[bookId]["removed"] = slicedRows.reduce((count, item) => {
+        if (shouldKeepRow(item)) {
+          return count;
+        }
+
+        const bookEntry = item.byBook[bookId];
+        const missing = !bookEntry;
+        const belowMin = (bookEntry?.n ?? 0) < 5;
+
+        return missing || belowMin ? count + 1 : count;
+      }, 0);
+
+    });
+
+    return { rows: filteredSlicedRows, stats: bookData };
+  }, [calculatedRowData, rankBy, topN, selectedBookIds, similarityCache]);
+
+  useEffect(() => {
+    setBookCalculationStats(displayRowsData.stats);
+  }, [displayRowsData.stats]);
+
+  const displayRows = displayRowsData.rows;
 
   // ============================================================================
   // Render
@@ -318,7 +353,11 @@ export default function App() {
 
           {/* Table Panel */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: 3 }}>
-            <ResultsTable rows={displayRows} selectedBooks={selectedBooks} calcStats={bookCalculationStats} />
+            <ResultsTable
+              rows={displayRows}
+              selectedBooks={selectedBooks}
+              calcStats={bookCalculationStats}
+            />
           </Paper>
         </Container>
       </Box>
