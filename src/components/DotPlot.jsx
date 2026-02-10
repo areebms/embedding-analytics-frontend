@@ -17,7 +17,7 @@ function colorForIndex(i) {
   return COLOR_PALETTE[i % COLOR_PALETTE.length];
 }
 
-export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermChange }) {
+export default function DotPlot({ rows, selectedBooks}) {
   const [hover, setHover] = useState(null);
 
   const width = 980;
@@ -67,11 +67,10 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
         {/* Rows */}
         {rows.map((r, rowIdx) => {
           const y = topPad + rowIdx * rowH;
-          const isActive = activeTerm === r.term;
 
           return (
-            <g key={r.term} onClick={() => onActiveTermChange(r.term)} style={{ cursor: "pointer" }}>
-              <text x={leftPad - 10} y={y + 5} textAnchor="end" className={`termLabel ${isActive ? "active" : ""}`}>
+            <g key={r.term} style={{ cursor: "pointer" }}>
+              <text x={leftPad - 10} y={y + 5} textAnchor="end" className="termLabel">
                 {r.term}
               </text>
 
@@ -93,7 +92,7 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
                     cy={cy}
                     r={5}
                     fill={colorForIndex(bi)}
-                    opacity={activeTerm && !isActive ? 0.25 : 1}
+                    opacity={1}
                     onMouseEnter={() =>
                       setHover({
                         term: r.term,

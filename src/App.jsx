@@ -62,9 +62,6 @@ export default function App() {
   const [topN, setTopN] = useState(25);
   const [rankBy, setRankBy] = useState("avg"); // avg | max | min
 
-  // UI state
-  const [activeTerm, setActiveTerm] = useState(null);
-
   // Data state
   const [allBooks, setAllBooks] = useState([]);
   const [baseRows, setBaseRows] = useState([]);
@@ -353,8 +350,6 @@ export default function App() {
             <SimilarityScatterChart
               rows={displayRows}
               selectedBooks={selectedBooks}
-              activeTerm={activeTerm}
-              onActiveTermChange={setActiveTerm}
               isLoading={isLoading}
             />
           </Paper>
@@ -364,8 +359,6 @@ export default function App() {
             <ResultsTable
               rows={displayRows}
               selectedBooks={selectedBooks}
-              activeTerm={activeTerm}
-              onActiveTermChange={setActiveTerm}
             />
           </Paper>
         </Container>

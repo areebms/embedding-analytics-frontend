@@ -45,7 +45,7 @@ function getColorForBook(bookIndex) {
 /**
  * Transform rows data into Chart.js dataset format
  */
-function createChartDatasets(rows, selectedBooks, activeTerm) {
+function createChartDatasets(rows, selectedBooks) {
   const bookColorMap = new Map(
     selectedBooks.map((book, index) => [book.id, { index, label: book.label }])
   );
@@ -68,9 +68,6 @@ function createChartDatasets(rows, selectedBooks, activeTerm) {
       })
       .filter(Boolean);
 
-    const isActive = !activeTerm;
-    const opacity = isActive ? 1 : 0.3;
-
     return {
       label: `${book.id} - ${book.label}`,
       data: dataPoints,
@@ -81,7 +78,7 @@ function createChartDatasets(rows, selectedBooks, activeTerm) {
       pointBackgroundColor: getColorForBook(index),
       pointBorderColor: "#fff",
       pointBorderWidth: 2,
-      opacity: opacity,
+      opacity: 1,
     };
   });
 
@@ -91,7 +88,7 @@ function createChartDatasets(rows, selectedBooks, activeTerm) {
 /**
  * Create Chart.js options configuration
  */
-function createChartOptions(rows, onActiveTermChange) {
+function createChartOptions(rows) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -156,7 +153,6 @@ function createChartOptions(rows, onActiveTermChange) {
       if (elements.length > 0) {
         const element = elements[0];
         const dataPoint = element.element.$context.raw;
-        onActiveTermChange(dataPoint.term);
       }
     },
   };
@@ -173,8 +169,6 @@ function createChartOptions(rows, onActiveTermChange) {
 export default function SimilarityScatterChart({
   rows,
   selectedBooks,
-  activeTerm,
-  onActiveTermChange,
   isLoading,
 }) {
   // ============================================================================
@@ -182,15 +176,15 @@ export default function SimilarityScatterChart({
   // ============================================================================
 
   const chartData = useMemo(() => {
-    const datasets = createChartDatasets(rows, selectedBooks, activeTerm);
+    const datasets = createChartDatasets(rows, selectedBooks);
     return {
       datasets,
     };
-  }, [rows, selectedBooks, activeTerm]);
+  }, [rows, selectedBooks]);
 
   const chartOptions = useMemo(() => {
-    return createChartOptions(rows, onActiveTermChange);
-  }, [rows, onActiveTermChange]);
+    return createChartOptions(rows);
+  }, [rows]);
 
   // ============================================================================
   // Render Helpers

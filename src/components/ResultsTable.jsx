@@ -14,14 +14,7 @@ import {
  * ResultsTable Component
  * Displays similarity data in a tabular format with sortable columns
  */
-export default function ResultsTable({ rows, selectedBooks, activeTerm, onActiveTermChange }) {
-  // ============================================================================
-  // Event Handlers
-  // ============================================================================
-
-  const handleRowClick = (term) => {
-    onActiveTermChange(term);
-  };
+export default function ResultsTable({ rows, selectedBooks }) {
 
   // ============================================================================
   // Render Helpers
@@ -55,18 +48,15 @@ export default function ResultsTable({ rows, selectedBooks, activeTerm, onActive
    * Render a single table row for a term
    */
   const renderTermRow = (row, index) => {
-    const isActive = activeTerm === row.term;
 
     return (
       <TableRow
         key={row.term}
-        onClick={() => handleRowClick(row.term)}
         hover
         sx={{
           cursor: "pointer",
-          bgcolor: isActive ? "action.selected" : "inherit",
           "&:hover": {
-            bgcolor: isActive ? "action.selected" : "action.hover",
+            bgcolor: "action.hover",
           },
         }}
       >
