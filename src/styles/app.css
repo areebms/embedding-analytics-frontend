@@ -105,8 +105,8 @@ select{ border:1px solid var(--line); border-radius:10px; padding: 8px 10px; bac
 .popoverSubtitle{ color:var(--muted); font-size:12px; margin-top:2px; }
 .bookList{ margin-top:10px; max-height: 300px; overflow:auto; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .bookRow{ display:flex; align-items:center; gap:10px; padding:10px 6px; border-bottom:1px solid #f1f5f9; }
-.bookId{ font-weight:800; width:70px; }
-.bookTitle{ color:var(--muted); }
+.bookId{ font-weight:800; }
+.bookLabel{ color:var(--muted); }
 .popoverFooter{ display:flex; justify-content:flex-end; gap:8px; padding-top:10px; }
 button.secondary{ background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:8px 10px; cursor:pointer; font-weight:700; }
 

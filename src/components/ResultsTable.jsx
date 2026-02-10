@@ -8,9 +8,8 @@ export default function ResultsTable({ rows, selectedBooks, activeTerm, onActive
             <th style={{ width: 220 }}>Term</th>
             <th style={{ width: 140 }}>Avg similarity</th>
             {selectedBooks.map((b) => (
-              <th key={b.id} title={`${b.id} — ${b.title}`}>
-                <div className="thTop">{b.id}</div>
-                <div className="thSub">{b.title}</div>
+              <th key={b.id}>
+                <div className="thTop">{b.label}</div>
               </th>
             ))}
           </tr>

@@ -1,22 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import "./styles/app.css";
 import TopBar from "./components/TopBar";
 import DotPlot from "./components/DotPlot";
 import ResultsTable from "./components/ResultsTable";
-
-// Example books (max 10 total)
-const ALL_BOOKS = [
-  { id: 3300, title: "Book One" },
-  { id: 33310, title: "Book Two" },
-  { id: 30107, title: "Book Three" },
-  { id: 12001, title: "Book Four" },
-  { id: 11029, title: "Book Five" },
-  { id: 22314, title: "Book Six" },
-  { id: 89811, title: "Book Seven" },
-  { id: 9981, title: "Book Eight" },
-  { id: 10677, title: "Book Nine" },
-  { id: 19077, title: "Book Ten" },
-];
 
 export default function App() {
   const [term, setTerm] = useState("market");
@@ -24,9 +10,25 @@ export default function App() {
   const [topN, setTopN] = useState(25);
   const [rankBy, setRankBy] = useState("avg"); // avg | max | min
   const [activeTerm, setActiveTerm] = useState(null);
+  const [allBooks, setAllBooks] = useState([]);
+
+  useEffect(() => {
+    get_books();
+  }, []);
+
+  const get_books = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/books");
+      if (!response.ok) throw new Error(`Books fetch failed: ${response.status}`);
+      setAllBooks(await response.json());
+    } catch (error) {
+      console.error(error);
+      setAllBooks([]);
+    }
+  };
 
   const selectedBooks = useMemo(
-    () => ALL_BOOKS.filter((b) => selectedBookIds.includes(b.id)),
+    () => allBooks.filter((b) => selectedBookIds.includes(b.id)),
     [selectedBookIds]
   );
 
@@ -39,7 +41,7 @@ export default function App() {
       <TopBar
         term={term}
         onTermChange={setTerm}
-        books={ALL_BOOKS}
+        books={allBooks}
         selectedBookIds={selectedBookIds}
         onSelectedBookIdsChange={setSelectedBookIds}
       />
@@ -49,7 +51,6 @@ export default function App() {
           <div className="panelHeader">
             <div>
               <h1 className="title">Similar terms across selected books</h1>
-              <div className="subtitle">Dot distribution + table (no heatmap)</div>
             </div>
 
             <div className="controls">

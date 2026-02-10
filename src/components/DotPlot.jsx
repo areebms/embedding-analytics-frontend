@@ -27,7 +27,7 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
     <div className="plotWrap">
       <div className="legendRow">
         {selectedBooks.map((b, i) => (
-          <div key={b.id} className="legendItem" title={`${b.id} — ${b.title}`}>
+          <div key={b.id} className="legendItem" title={`${b.id} — ${b.label}`}>
             <span className="swatch" style={{ background: colorForIndex(i) }} />
             <span className="legendText">{b.id}</span>
           </div>

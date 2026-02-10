@@ -1,4 +1,4 @@
-export default function BookPicker({ books, selectedBookIds, onSelectedBookIdsChange, onClose, subtitle }) {
+export default function BookPicker({ books, selectedBookIds, onSelectedBookIdsChange, onClose }) {
   const toggle = (id) => {
     if (selectedBookIds.includes(id)) onSelectedBookIdsChange(selectedBookIds.filter((x) => x !== id));
     else onSelectedBookIdsChange([...selectedBookIds, id]);
@@ -9,7 +9,6 @@ export default function BookPicker({ books, selectedBookIds, onSelectedBookIdsCh
       <div className="popoverHeader">
         <div>
           <div className="popoverTitle">Select books to compare</div>
-          {subtitle ? <div className="popoverSubtitle">{subtitle}</div> : null}
         </div>
         <button className="iconButton" onClick={onClose} aria-label="Close">
           ✕
@@ -20,8 +19,7 @@ export default function BookPicker({ books, selectedBookIds, onSelectedBookIdsCh
         {books.map((b) => (
           <label key={b.id} className="bookRow">
             <input type="checkbox" checked={selectedBookIds.includes(b.id)} onChange={() => toggle(b.id)} />
-            <span className="bookId">{b.id}</span>
-            <span className="bookTitle">— {b.title}</span>
+            <span className="bookId">{b.label}</span>
           </label>
         ))}
       </div>

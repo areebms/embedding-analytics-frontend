@@ -7,10 +7,6 @@ export default function TopBar({ term, onTermChange, books, selectedBookIds, onS
   const selectedCount = selectedBookIds.length;
   const totalCount = books.length;
 
-  const selectedTitles = useMemo(() => {
-    const map = new Map(books.map((b) => [b.id, b.title]));
-    return selectedBookIds.map((id) => `${id} — ${map.get(id) ?? "Untitled"}`);
-  }, [books, selectedBookIds]);
 
   return (
     <header className="topbar">
@@ -37,7 +33,6 @@ export default function TopBar({ term, onTermChange, books, selectedBookIds, onS
               selectedBookIds={selectedBookIds}
               onSelectedBookIdsChange={onSelectedBookIdsChange}
               onClose={() => setPickerOpen(false)}
-              subtitle={selectedTitles.join(", ")}
             />
           )}
         </div>
