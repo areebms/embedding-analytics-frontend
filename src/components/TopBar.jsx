@@ -7,11 +7,16 @@ import {
   Box,
   InputAdornment,
   IconButton,
-  Badge,
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import BookPicker from "./BookPicker";
+import { getColorForBook } from "../utils/bookColors";
 
 /**
  * TopBar Component
@@ -23,6 +28,11 @@ export default function TopBar({
   books,
   selectedBookIds,
   onSelectedBookIdsChange,
+  selectedBooks = [],
+  rankBy,
+  onRankByChange,
+  topN,
+  onTopNChange,
 }) {
   // ============================================================================
   // State
@@ -53,6 +63,26 @@ export default function TopBar({
     setIsPickerOpen(false);
   };
 
+  const renderLegend = () => (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+      {selectedBooks.map((book) => (
+        <Chip
+          key={book.id}
+          label={book.label}
+          size="small"
+          sx={{
+            bgcolor: getColorForBook(book.position),
+            color: "#fff",
+            fontWeight: 600,
+            "& .MuiChip-label": {
+              px: 1.5,
+            },
+          }}
+        />
+      ))}
+    </Box>
+  );
+
   // ============================================================================
   // Main Render
   // ============================================================================
@@ -69,20 +99,54 @@ export default function TopBar({
         borderColor: "divider",
       }}
     >
-      <Toolbar sx={{ gap: 2 }}>
-        <Box
-          component="span"
-          sx={{
-            fontSize: 18,
-            fontWeight: 700,
-            letterSpacing: 0.3,
-            color: "text.primary",
-          }}
-        >
-          Embedding Analytics
+      <Toolbar sx={{ gap: 2, alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            component="span"
+            sx={{
+              fontSize: 18,
+              fontWeight: 700,
+              letterSpacing: 0.3,
+              color: "text.primary",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Embedding Analytics
+          </Box>
+
+          <Box sx={{ position: "relative" }}>
+            <Button
+              variant="outlined"
+              onClick={togglePicker}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+              }}
+            >
+              Select Books: {selectedCount} / {totalCount}
+            </Button>
+
+            {isPickerOpen && (
+              <BookPicker
+                books={books}
+                selectedBookIds={selectedBookIds}
+                onSelectedBookIdsChange={onSelectedBookIdsChange}
+                onClose={closePicker}
+              />
+            )}
+          </Box>
+
+          {renderLegend()}
         </Box>
 
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center", ml: "auto" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            marginLeft: "auto",
+          }}
+        >
           {/* Search Box */}
           <TextField
             value={term}
@@ -90,7 +154,7 @@ export default function TopBar({
             placeholder="Term (e.g. market)"
             size="small"
             sx={{
-              minWidth: 380,
+              minWidth: 200,
               "& .MuiOutlinedInput-root": {
                 bgcolor: "background.paper",
               },
@@ -104,35 +168,36 @@ export default function TopBar({
             }}
           />
 
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            {/* Book Selector */}
-            <Box sx={{ position: "relative" }}>
-              <Button
-                variant="outlined"
-                onClick={togglePicker}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Compare Books: {selectedCount} / {totalCount}
-              </Button>
+          {/* Ranking selector */}
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Ranked by</InputLabel>
+            <Select
+              value={rankBy}
+              label="Ranked by"
+              onChange={(e) => onRankByChange(e.target.value)}
+            >
+              <MenuItem value="avg">Average similarity</MenuItem>
+              <MenuItem value="max">Max similarity</MenuItem>
+              <MenuItem value="min">Min similarity</MenuItem>
+            </Select>
+          </FormControl>
 
-              {isPickerOpen && (
-                <BookPicker
-                  books={books}
-                  selectedBookIds={selectedBookIds}
-                  onSelectedBookIdsChange={onSelectedBookIdsChange}
-                  onClose={closePicker}
-                />
-              )}
-            </Box>
-
-            {/* Settings Button */}
-            <IconButton aria-label="Settings">
-              <SettingsIcon />
-            </IconButton>
-          </Box>
+          {/* Top N selector */}
+          <FormControl size="small" sx={{ minWidth: 85 }}>
+            <InputLabel>Show top</InputLabel>
+            <Select
+              value={topN}
+              label="Showing top"
+              onChange={(e) => onTopNChange(Number(e.target.value))}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+            </Select>
+          </FormControl>
+          <IconButton aria-label="Settings">
+            <SettingsIcon />
+          </IconButton>
         </Box>
       </Toolbar>
     </AppBar>

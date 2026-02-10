@@ -319,7 +319,7 @@ export default function App() {
   // ============================================================================
   // Render
   // ============================================================================
-
+  console.log(calculatedRowData);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -330,6 +330,11 @@ export default function App() {
           books={allBooks}
           selectedBookIds={selectedBookIds}
           onSelectedBookIdsChange={setSelectedBookIds}
+          selectedBooks={selectedBooks}
+          rankBy={rankBy}
+          onRankByChange={setRankBy}
+          topN={topN}
+          onTopNChange={setTopN}
         />
 
         <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -345,10 +350,6 @@ export default function App() {
               rows={displayRows.slice(1)}
               selectedBooks={selectedBooks}
               isLoading={isLoading}
-              setRankBy={setRankBy}
-              setTopN={setTopN}
-              topN={topN}
-              rankBy={rankBy}
             />
           </Paper>
 

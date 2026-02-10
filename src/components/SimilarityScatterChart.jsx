@@ -9,16 +9,8 @@ import {
   Legend,
 } from "chart.js";
 import { Scatter } from "react-chartjs-2";
-import {
-  Box,
-  Chip,
-  CircularProgress,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
+import { getColorForBook } from "../utils/bookColors";
 
 // Register Chart.js components
 ChartJS.register(
@@ -33,30 +25,6 @@ ChartJS.register(
 // ============================================================================
 // Constants
 // ============================================================================
-
-const COLOR_PALETTE = [
-  "#e15759", // Red
-  "#4e79a7", // Blue
-  "#59a14f", // Green
-  "#f28e2b", // Orange
-  "#edc948", // Yellow
-  "#b07aa1", // Purple
-  "#76b7b2", // Teal
-  "#ff9da7", // Pink
-  "#9c755f", // Brown
-  "#bab0ab", // Gray
-];
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Get color for a book by its index
- */
-function getColorForBook(bookIndex) {
-  return COLOR_PALETTE[bookIndex % COLOR_PALETTE.length];
-}
 
 /**
  * Transform rows data into Chart.js dataset format
@@ -219,10 +187,6 @@ export default function SimilarityScatterChart({
   rows,
   selectedBooks,
   isLoading,
-  setTopN,
-  rankBy,
-  setRankBy,
-  topN,
 }) {
   // ============================================================================
   // Computed Values
@@ -239,30 +203,6 @@ export default function SimilarityScatterChart({
   const chartOptions = useMemo(() => {
     return createChartOptions(rows);
   }, [rows]);
-
-  // ============================================================================
-  // Render Helpers
-  // ============================================================================
-
-  const renderLegend = () => (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-      {selectedBooks.map((book, index) => (
-        <Chip
-          key={book.id}
-          label={book.label}
-          size="small"
-          sx={{
-            bgcolor: getColorForBook(book.position),
-            color: "#fff",
-            fontWeight: 600,
-            "& .MuiChip-label": {
-              px: 1.5,
-            },
-          }}
-        />
-      ))}
-    </Box>
-  );
 
   const renderLoadingState = () => (
     <Box
@@ -312,48 +252,6 @@ export default function SimilarityScatterChart({
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          mb: 1,
-          pb: 1,
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        {renderLegend()}
-        <Box sx={{ display: "flex", gap: 2 }}>
-          {/* Ranking selector */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Ranked by</InputLabel>
-            <Select
-              value={rankBy}
-              label="Ranked by"
-              onChange={(e) => setRankBy(e.target.value)}
-            >
-              <MenuItem value="avg">Average similarity</MenuItem>
-              <MenuItem value="max">Max similarity</MenuItem>
-              <MenuItem value="min">Min similarity</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Top N selector */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Showing top</InputLabel>
-            <Select
-              value={topN}
-              label="Showing top"
-              onChange={(e) => setTopN(Number(e.target.value))}
-            >
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={25}>25</MenuItem>
-              <MenuItem value={50}>50</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-      </Box>
       {renderChart()}
     </Box>
   );
