@@ -95,7 +95,7 @@ export default function App() {
   };
 
   /**
-   * Fetch similarity data for selected books when term or selection changes
+   * Fetch similarity data for selected books when selection changes
    */
   useEffect(() => {
     let cancelled = false;
@@ -105,25 +105,20 @@ export default function App() {
         setRowsError(null);
         setIsLoading(true);
 
-        // Use functional update to access fresh cache
-        setSimilarityCache((currentCache) => {
-          // Find which books need data fetched
-          const pendingBookIds = selectedBookIds.filter(
-            (bookId) => !currentCache[bookId]
-          );
+        // Find which books need data fetched
+        const pendingBookIds = selectedBookIds.filter(
+          (bookId) => !similarityCache[bookId]
+        );
 
-          // All data is already cached
-          if (pendingBookIds.length === 0) {
-            computeAndSetRows(selectedBookIds, currentCache);
-            setIsLoading(false);
-            return currentCache;
-          }
+        // All data is already cached
+        if (pendingBookIds.length === 0) {
+          computeAndSetRows(selectedBookIds, similarityCache);
+          setIsLoading(false);
+          return;
+        }
 
-          // Fetch missing similarity data
-          fetchMissingSimilarityData(pendingBookIds, selectedBookIds, cancelled);
-
-          return currentCache;
-        });
+        // Fetch missing similarity data
+        fetchMissingSimilarityData(pendingBookIds, selectedBookIds, cancelled);
       } catch (error) {
         if (!cancelled) {
           console.error("Error loading similarity data:", error);
@@ -135,7 +130,7 @@ export default function App() {
     };
 
     // Only load if we have selections and a search term
-    if (selectedBookIds.length && term.trim()) {
+    if (selectedBookIds.length) {
       loadSimilarityData();
     } else {
       setBaseRows([]);
@@ -146,7 +141,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedBookIds, term]);
+  }, [selectedBookIds, similarityCache]);
 
   /**
    * Fetch similarity data for books not in cache
