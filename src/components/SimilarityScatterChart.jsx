@@ -92,10 +92,47 @@ function createChartDatasets(rows, selectedBooks) {
       pointBorderColor: "#fff",
       pointBorderWidth: 2,
       opacity: 1,
+      order: 1,
     };
   });
 
   return datasets;
+}
+
+/**
+ * Create line datasets that show min/max similarity range per term
+ */
+function createRangeDatasets(rows, selectedBooks) {
+  return rows
+    .map((row, rowIndex) => {
+      const similarities = selectedBooks
+        .map((book) => row.byBook[book.id]?.similarity)
+        .filter((value) => typeof value === "number");
+
+      if (similarities.length === 0) {
+        return null;
+      }
+
+      const min = Math.min(...similarities);
+      const max = Math.max(...similarities);
+
+      return {
+        label: `range-${rowIndex}`,
+        type: "line",
+        data: [
+          { x: min, y: rowIndex },
+          { x: max, y: rowIndex },
+        ],
+        borderColor: "#000",
+        borderWidth: 1,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        showLine: true,
+        fill: false,
+        order: 0,
+      };
+    })
+    .filter(Boolean);
 }
 
 /**
@@ -192,9 +229,10 @@ export default function SimilarityScatterChart({
   // ============================================================================
 
   const chartData = useMemo(() => {
+    const rangeDatasets = createRangeDatasets(rows, selectedBooks);
     const datasets = createChartDatasets(rows, selectedBooks);
     return {
-      datasets,
+      datasets: [...rangeDatasets, ...datasets],
     };
   }, [rows, selectedBooks]);
 

@@ -68,6 +68,7 @@ export default function App() {
   useEffect(() => {
     setSimilarityCache({});
     setSelectedBookIds([3300]);
+    setCalculatedRowData([])
   }, [term]);
 
   const fetchBooks = async () => {
@@ -341,7 +342,7 @@ export default function App() {
           {/* Chart Panel */}
           <Paper elevation={0} sx={{ mb: 2, p: 3, borderRadius: 3 }}>
             <SimilarityScatterChart
-              rows={displayRows}
+              rows={displayRows.slice(1)}
               selectedBooks={selectedBooks}
               isLoading={isLoading}
               setRankBy={setRankBy}
@@ -357,6 +358,7 @@ export default function App() {
               rows={displayRows}
               selectedBooks={selectedBooks}
               calcStats={bookCalculationStats}
+              onClick={setTerm}
             />
           </Paper>
         </Container>

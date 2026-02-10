@@ -13,7 +13,7 @@ import {
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 
-export default function ResultsTable({ rows, selectedBooks, calcStats }) {
+export default function ResultsTable({ rows, selectedBooks, calcStats, onClick }) {
 
   const renderBookTooltip = (bookId) => {
     const stats = calcStats?.[bookId];
@@ -88,7 +88,7 @@ export default function ResultsTable({ rows, selectedBooks, calcStats }) {
 
         {/* Term name */}
         <TableCell>
-          <Typography fontWeight={700} color="primary">
+          <Typography fontWeight={700} color="primary" onClick={() => onClick(row.term)}>
             {row.term}
           </Typography>
         </TableCell>

@@ -69,57 +69,70 @@ export default function TopBar({
         borderColor: "divider",
       }}
     >
-      <Toolbar sx={{ gap: 2, justifyContent: "space-between" }}>
-        {/* Search Box */}
-        Embedding Analytics
-        <TextField
-          value={term}
-          onChange={handleTermChange}
-          placeholder="Term (e.g. market)"
-          size="small"
+      <Toolbar sx={{ gap: 2 }}>
+        <Box
+          component="span"
           sx={{
-            minWidth: 380,
-            "& .MuiOutlinedInput-root": {
-              bgcolor: "background.paper",
-            },
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: 0.3,
+            color: "text.primary",
           }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
+        >
+          Embedding Analytics
+        </Box>
 
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          {/* Book Selector */}
-          <Box sx={{ position: "relative" }}>
-            <Button
-              variant="outlined"
-              onClick={togglePicker}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-              }}
-            >
-              Compare Books: {selectedCount} / {totalCount}
-            </Button>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center", ml: "auto" }}>
+          {/* Search Box */}
+          <TextField
+            value={term}
+            onChange={handleTermChange}
+            placeholder="Term (e.g. market)"
+            size="small"
+            sx={{
+              minWidth: 380,
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "background.paper",
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
 
-            {isPickerOpen && (
-              <BookPicker
-                books={books}
-                selectedBookIds={selectedBookIds}
-                onSelectedBookIdsChange={onSelectedBookIdsChange}
-                onClose={closePicker}
-              />
-            )}
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            {/* Book Selector */}
+            <Box sx={{ position: "relative" }}>
+              <Button
+                variant="outlined"
+                onClick={togglePicker}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Compare Books: {selectedCount} / {totalCount}
+              </Button>
+
+              {isPickerOpen && (
+                <BookPicker
+                  books={books}
+                  selectedBookIds={selectedBookIds}
+                  onSelectedBookIdsChange={onSelectedBookIdsChange}
+                  onClose={closePicker}
+                />
+              )}
+            </Box>
+
+            {/* Settings Button */}
+            <IconButton aria-label="Settings">
+              <SettingsIcon />
+            </IconButton>
           </Box>
-
-          {/* Settings Button */}
-          <IconButton aria-label="Settings">
-            <SettingsIcon />
-          </IconButton>
         </Box>
       </Toolbar>
     </AppBar>
