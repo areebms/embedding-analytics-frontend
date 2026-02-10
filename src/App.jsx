@@ -1,141 +1,375 @@
 import { useMemo, useState, useEffect } from "react";
-import "./styles/app.css";
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CssBaseline,
+  ThemeProvider,
+  createTheme,
+} from "@mui/material";
 import TopBar from "./components/TopBar";
-import DotPlot from "./components/DotPlot";
+import SimilarityScatterChart from "./components/SimilarityScatterChart";
 import ResultsTable from "./components/ResultsTable";
 
+// ============================================================================
+// Theme Configuration
+// ============================================================================
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#4e79a7",
+    },
+    secondary: {
+      main: "#e15759",
+    },
+    background: {
+      default: "#f6f7fb",
+      paper: "#ffffff",
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+  },
+  shape: {
+    borderRadius: 12,
+  },
+});
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+/**
+ * Main application component for term similarity analysis across books
+ */
 export default function App() {
+  // ============================================================================
+  // State Management
+  // ============================================================================
+
+  // Search and filtering state
   const [term, setTerm] = useState("market");
-  const [selectedBookIds, setSelectedBookIds] = useState([3300, 33310, 30107, 12001, 22314, 9981]);
+  const [selectedBookIds, setSelectedBookIds] = useState([3300]);
   const [topN, setTopN] = useState(25);
   const [rankBy, setRankBy] = useState("avg"); // avg | max | min
-  const [activeTerm, setActiveTerm] = useState(null);
-  const [allBooks, setAllBooks] = useState([]);
 
+  // UI state
+  const [activeTerm, setActiveTerm] = useState(null);
+
+  // Data state
+  const [allBooks, setAllBooks] = useState([]);
+  const [baseRows, setBaseRows] = useState([]);
+  const [rowsError, setRowsError] = useState(null);
+  const [similarityCache, setSimilarityCache] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ============================================================================
+  // Data Fetching
+  // ============================================================================
+
+  /**
+   * Fetch all available books on component mount
+   */
   useEffect(() => {
-    get_books();
+    fetchBooks();
   }, []);
 
-  const get_books = async () => {
+  const fetchBooks = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/books");
-      if (!response.ok) throw new Error(`Books fetch failed: ${response.status}`);
-      setAllBooks(await response.json());
+      const response = await fetch(`${API_BASE_URL}/books`);
+      if (!response.ok) {
+        throw new Error(`Books fetch failed: ${response.status}`);
+      }
+      const books = await response.json();
+      setAllBooks(books);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching books:", error);
       setAllBooks([]);
     }
   };
 
-  const selectedBooks = useMemo(
-    () => allBooks.filter((b) => selectedBookIds.includes(b.id)),
-    [selectedBookIds]
-  );
+  /**
+   * Fetch similarity data for selected books when term or selection changes
+   */
+  useEffect(() => {
+    let cancelled = false;
 
-  // TODO: Replace this with your real API call.
-  // Expected shape: rows = [{ term, avg, byBook: { [bookId]: { sim, n, conf } } }]
-  const rows = useMemo(() => mockResults(term, selectedBooks, topN, rankBy), [term, selectedBooks, topN, rankBy]);
+    const loadSimilarityData = async () => {
+      try {
+        setRowsError(null);
+        setIsLoading(true);
 
-  return (
-    <div className="app">
-      <TopBar
-        term={term}
-        onTermChange={setTerm}
-        books={allBooks}
-        selectedBookIds={selectedBookIds}
-        onSelectedBookIdsChange={setSelectedBookIds}
-      />
+        // Use functional update to access fresh cache
+        setSimilarityCache((currentCache) => {
+          // Find which books need data fetched
+          const pendingBookIds = selectedBookIds.filter(
+            (bookId) => !currentCache[bookId]
+          );
 
-      <main className="content">
-        <section className="panel">
-          <div className="panelHeader">
-            <div>
-              <h1 className="title">Similar terms across selected books</h1>
-            </div>
+          // All data is already cached
+          if (pendingBookIds.length === 0) {
+            computeAndSetRows(selectedBookIds, currentCache);
+            setIsLoading(false);
+            return currentCache;
+          }
 
-            <div className="controls">
-              <label className="control">
-                Ranked by
-                <select value={rankBy} onChange={(e) => setRankBy(e.target.value)}>
-                  <option value="avg">Average similarity</option>
-                  <option value="max">Max similarity</option>
-                  <option value="min">Min similarity</option>
-                </select>
-              </label>
+          // Fetch missing similarity data
+          fetchMissingSimilarityData(pendingBookIds, selectedBookIds, cancelled);
 
-              <label className="control">
-                Showing top
-                <select value={topN} onChange={(e) => setTopN(Number(e.target.value))}>
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
-              </label>
-            </div>
-          </div>
+          return currentCache;
+        });
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Error loading similarity data:", error);
+          setRowsError(error);
+          setBaseRows([]);
+          setIsLoading(false);
+        }
+      }
+    };
 
-          <DotPlot
-            rows={rows}
-            selectedBooks={selectedBooks}
-            activeTerm={activeTerm}
-            onActiveTermChange={setActiveTerm}
-          />
-        </section>
-
-        <section className="panel">
-          <ResultsTable
-            rows={rows}
-            selectedBooks={selectedBooks}
-            activeTerm={activeTerm}
-            onActiveTermChange={setActiveTerm}
-          />
-        </section>
-      </main>
-    </div>
-  );
-}
-
-// ------------------------
-// Mock data (replace w/ API)
-// ------------------------
-function mockResults(query, books, topN, rankBy) {
-  const seedTerms = ["home", "agree", "effectual", "compel", "avoid", "deal", "growth", "clearly", "producer", "aid"];
-  const terms = Array.from({ length: topN }, (_, i) => seedTerms[i % seedTerms.length] + (i >= seedTerms.length ? `_${i}` : ""));
-
-  const rows = terms.map((t) => {
-    const byBook = {};
-    const sims = [];
-
-    for (const b of books) {
-      // randomly omit some points to simulate missing values
-      if ((hash(`${query}-${t}-${b.id}`) % 7) === 0) continue;
-
-      const sim = clamp01(((hash(`${query}-${t}-${b.id}`) % 1000) / 1000) * 0.55);
-      const n = 10 + (hash(`n-${query}-${t}-${b.id}`) % 400);
-      const conf = 85 + (hash(`c-${query}-${t}-${b.id}`) % 15);
-      byBook[b.id] = { sim, n, conf };
-      sims.push(sim);
+    // Only load if we have selections and a search term
+    if (selectedBookIds.length && term.trim()) {
+      loadSimilarityData();
+    } else {
+      setBaseRows([]);
+      setIsLoading(false);
     }
 
-    const avg = sims.length ? sims.reduce((a, x) => a + x, 0) / sims.length : 0;
-    const max = sims.length ? Math.max(...sims) : 0;
-    const min = sims.length ? Math.min(...sims) : 0;
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBookIds, term]);
 
-    return { term: t, avg, max, min, byBook };
-  });
+  /**
+   * Fetch similarity data for books not in cache
+   */
+  const fetchMissingSimilarityData = async (pendingBookIds, selectedBookIds, cancelled) => {
+    try {
+      const fetchPromises = pendingBookIds.map(async (bookId) => {
+        const url = `${API_BASE_URL}/similarity/${bookId}/${encodeURIComponent(term)}`;
+        const response = await fetch(url);
 
-  rows.sort((a, b) => (b[rankBy] ?? 0) - (a[rankBy] ?? 0));
-  return rows.slice(0, topN);
-}
+        if (!response.ok) {
+          throw new Error(`Similarity fetch failed (${bookId}): ${response.status}`);
+        }
 
-function clamp01(x) {
-  return Math.max(0, Math.min(1, x));
-}
-function hash(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return Math.abs(h);
+        const items = await response.json();
+        return { bookId, items };
+      });
+
+      const fetchedData = await Promise.all(fetchPromises);
+
+      // Update cache and compute rows if component is still mounted
+      if (!cancelled) {
+        setSimilarityCache((previousCache) => {
+          const updatedCache = { ...previousCache };
+
+          // Add newly fetched data to cache
+          for (const { bookId, items } of fetchedData) {
+            updatedCache[bookId] = items;
+          }
+
+          // Compute rows with the updated cache
+          computeAndSetRows(selectedBookIds, updatedCache);
+          setIsLoading(false);
+
+          return updatedCache;
+        });
+      }
+    } catch (error) {
+      if (!cancelled) {
+        console.error("Error fetching missing similarity data:", error);
+        setRowsError(error);
+        setBaseRows([]);
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // ============================================================================
+  // Data Processing
+  // ============================================================================
+
+  /**
+   * Compute rows from cached similarity data
+   * Groups data by term and calculates statistics across selected books
+   */
+  const computeAndSetRows = (bookIds, cache) => {
+    // Gather cached data for selected books
+    const bookResults = bookIds.map((bookId) => ({
+      bookId,
+      items: cache[bookId] || [],
+    }));
+
+    // Group similarity data by term
+    const termDataMap = new Map();
+
+    for (const { bookId, items } of bookResults) {
+      for (const item of items) {
+        const termKey = item.term;
+
+        // Initialize term entry if it doesn't exist
+        if (!termDataMap.has(termKey)) {
+          termDataMap.set(termKey, {
+            term: termKey,
+            byBook: {},
+          });
+        }
+
+        // Add this book's data for the term
+        termDataMap.get(termKey).byBook[bookId] = {
+          sim: Number(item.similarity),
+          n: Number(item.count),
+          conf: Number(item.coherence) * 100,
+        };
+      }
+    }
+
+    // Calculate aggregate statistics for each term
+    const rows = Array.from(termDataMap.values()).map((row) => {
+      const similarities = Object.values(row.byBook).map((data) => data.sim);
+
+      const avg = similarities.length
+        ? similarities.reduce((sum, sim) => sum + sim, 0) / similarities.length
+        : 0;
+
+      const max = similarities.length ? Math.max(...similarities) : 0;
+      const min = similarities.length ? Math.min(...similarities) : 0;
+
+      return { ...row, avg, max, min };
+    });
+
+    setBaseRows(rows);
+  };
+
+  // ============================================================================
+  // Derived State
+  // ============================================================================
+
+  /**
+   * Filter all books to only those currently selected
+   */
+  const selectedBooks = useMemo(
+    () => allBooks.filter((book) => selectedBookIds.includes(book.id)),
+    [allBooks, selectedBookIds]
+  );
+
+  /**
+   * Sort and limit rows based on current ranking and display preferences
+   */
+  const displayRows = useMemo(() => {
+    const sortedRows = [...baseRows].sort((a, b) => {
+      return (b[rankBy] ?? 0) - (a[rankBy] ?? 0);
+    });
+
+    return sortedRows.slice(0, topN);
+  }, [baseRows, rankBy, topN]);
+
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+        <TopBar
+          term={term}
+          onTermChange={setTerm}
+          books={allBooks}
+          selectedBookIds={selectedBookIds}
+          onSelectedBookIdsChange={setSelectedBookIds}
+        />
+
+        <Container maxWidth="xl" sx={{ py: 3 }}>
+          {/* Chart Panel */}
+          <Paper elevation={0} sx={{ mb: 2, p: 3, borderRadius: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 3,
+                pb: 2,
+                borderBottom: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Box>
+                <Typography variant="h5" component="h1" fontWeight={600}>
+                  Similar terms across selected books
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", gap: 2 }}>
+                {/* Ranking selector */}
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Ranked by</InputLabel>
+                  <Select
+                    value={rankBy}
+                    label="Ranked by"
+                    onChange={(e) => setRankBy(e.target.value)}
+                  >
+                    <MenuItem value="avg">Average similarity</MenuItem>
+                    <MenuItem value="max">Max similarity</MenuItem>
+                    <MenuItem value="min">Min similarity</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {/* Top N selector */}
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Showing top</InputLabel>
+                  <Select
+                    value={topN}
+                    label="Showing top"
+                    onChange={(e) => setTopN(Number(e.target.value))}
+                  >
+                    <MenuItem value={10}>10</MenuItem>
+                    <MenuItem value={25}>25</MenuItem>
+                    <MenuItem value={50}>50</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+
+            {/* Error message */}
+            {rowsError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                Failed to load similarity data.
+              </Alert>
+            )}
+
+            <SimilarityScatterChart
+              rows={displayRows}
+              selectedBooks={selectedBooks}
+              activeTerm={activeTerm}
+              onActiveTermChange={setActiveTerm}
+              isLoading={isLoading}
+            />
+          </Paper>
+
+          {/* Table Panel */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3 }}>
+            <ResultsTable
+              rows={displayRows}
+              selectedBooks={selectedBooks}
+              activeTerm={activeTerm}
+              onActiveTermChange={setActiveTerm}
+            />
+          </Paper>
+        </Container>
+      </Box>
+    </ThemeProvider>
+  );
 }

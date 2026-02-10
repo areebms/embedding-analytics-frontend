@@ -1,37 +1,119 @@
-export default function BookPicker({ books, selectedBookIds, onSelectedBookIdsChange, onClose }) {
-  const toggle = (id) => {
-    if (selectedBookIds.includes(id)) onSelectedBookIdsChange(selectedBookIds.filter((x) => x !== id));
-    else onSelectedBookIdsChange([...selectedBookIds, id]);
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  IconButton,
+  Box,
+  Typography,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+
+/**
+ * BookPicker Component
+ * Modal dialog for selecting which books to compare
+ */
+export default function BookPicker({
+  books,
+  selectedBookIds,
+  onSelectedBookIdsChange,
+  onClose,
+}) {
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  /**
+   * Toggle selection of a single book
+   */
+  const handleToggleBook = (bookId) => {
+    if (selectedBookIds.includes(bookId)) {
+      // Remove from selection
+      const updatedIds = selectedBookIds.filter((id) => id !== bookId);
+      onSelectedBookIdsChange(updatedIds);
+    } else {
+      // Add to selection
+      const updatedIds = [...selectedBookIds, bookId];
+      onSelectedBookIdsChange(updatedIds);
+    }
   };
 
+  /**
+   * Select all books
+   */
+  const handleSelectAll = () => {
+    const allBookIds = books.map((book) => book.id);
+    onSelectedBookIdsChange(allBookIds);
+  };
+
+  /**
+   * Clear all selections
+   */
+  const handleClearAll = () => {
+    onSelectedBookIdsChange([]);
+  };
+
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
   return (
-    <div className="popover" role="dialog">
-      <div className="popoverHeader">
-        <div>
-          <div className="popoverTitle">Select books to compare</div>
-        </div>
-        <button className="iconButton" onClick={onClose} aria-label="Close">
-          ✕
-        </button>
-      </div>
+    <Dialog
+      open={true}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: 3 },
+      }}
+    >
+      <DialogTitle>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h6" fontWeight={700}>
+            Select books to compare
+          </Typography>
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
 
-      <div className="bookList">
-        {books.map((b) => (
-          <label key={b.id} className="bookRow">
-            <input type="checkbox" checked={selectedBookIds.includes(b.id)} onChange={() => toggle(b.id)} />
-            <span className="bookId">{b.label}</span>
-          </label>
-        ))}
-      </div>
+      <DialogContent dividers sx={{ maxHeight: 400 }}>
+        <FormGroup>
+          {books.map((book) => (
+            <FormControlLabel
+              key={book.id}
+              control={
+                <Checkbox
+                  checked={selectedBookIds.includes(book.id)}
+                  onChange={() => handleToggleBook(book.id)}
+                />
+              }
+              label={
+                <Typography fontWeight={600}>
+                  {book.id} - {book.label}
+                </Typography>
+              }
+            />
+          ))}
+        </FormGroup>
+      </DialogContent>
 
-      <div className="popoverFooter">
-        <button className="secondary" onClick={() => onSelectedBookIdsChange(books.map((b) => b.id))}>
-          Select all
-        </button>
-        <button className="secondary" onClick={() => onSelectedBookIdsChange([])}>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={handleClearAll} variant="outlined">
           Clear
-        </button>
-      </div>
-    </div>
+        </Button>
+        <Button onClick={handleSelectAll} variant="outlined">
+          Select all
+        </Button>
+        <Button onClick={onClose} variant="contained">
+          Done
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

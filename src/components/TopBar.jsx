@@ -1,46 +1,126 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import {
+  AppBar,
+  Toolbar,
+  TextField,
+  Button,
+  Box,
+  InputAdornment,
+  IconButton,
+  Badge,
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import SettingsIcon from "@mui/icons-material/Settings";
 import BookPicker from "./BookPicker";
 
-export default function TopBar({ term, onTermChange, books, selectedBookIds, onSelectedBookIdsChange }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
+/**
+ * TopBar Component
+ * Application header with search term input and book selection controls
+ */
+export default function TopBar({
+  term,
+  onTermChange,
+  books,
+  selectedBookIds,
+  onSelectedBookIdsChange,
+}) {
+  // ============================================================================
+  // State
+  // ============================================================================
+
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  // ============================================================================
+  // Computed Values
+  // ============================================================================
 
   const selectedCount = selectedBookIds.length;
   const totalCount = books.length;
 
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  const handleTermChange = (event) => {
+    onTermChange(event.target.value);
+  };
+
+  const togglePicker = () => {
+    setIsPickerOpen((isOpen) => !isOpen);
+  };
+
+  const closePicker = () => {
+    setIsPickerOpen(false);
+  };
+
+  // ============================================================================
+  // Main Render
+  // ============================================================================
 
   return (
-    <header className="topbar">
-      <div className="termBox">
-        <span className="icon">⌕</span>
-        <input
+    <AppBar
+      position="sticky"
+      color="default"
+      elevation={0}
+      sx={{
+        bgcolor: "rgba(255, 255, 255, 0.9)",
+        backdropFilter: "blur(10px)",
+        borderBottom: 1,
+        borderColor: "divider",
+      }}
+    >
+      <Toolbar sx={{ gap: 2, justifyContent: "space-between" }}>
+        {/* Search Box */}
+        <TextField
           value={term}
-          onChange={(e) => onTermChange(e.target.value)}
+          onChange={handleTermChange}
           placeholder="Term (e.g. market)"
-          className="termInput"
+          size="small"
+          sx={{
+            minWidth: 380,
+            "& .MuiOutlinedInput-root": {
+              bgcolor: "background.paper",
+            },
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
         />
-      </div>
 
-      <div className="topbarRight">
-        <div className="compareBlock">
-          <div className="compareLabel">Compare</div>
-          <button className="bookButton" onClick={() => setPickerOpen((v) => !v)} aria-haspopup="dialog">
-            Books: {selectedCount} / {totalCount} <span className="caret">▾</span>
-          </button>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          {/* Book Selector */}
+          <Box sx={{ position: "relative" }}>
+            <Button
+              variant="outlined"
+              onClick={togglePicker}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+              }}
+            >
+              Compare Books: {selectedCount} / {totalCount}
+            </Button>
 
-          {pickerOpen && (
-            <BookPicker
-              books={books}
-              selectedBookIds={selectedBookIds}
-              onSelectedBookIdsChange={onSelectedBookIdsChange}
-              onClose={() => setPickerOpen(false)}
-            />
-          )}
-        </div>
+            {isPickerOpen && (
+              <BookPicker
+                books={books}
+                selectedBookIds={selectedBookIds}
+                onSelectedBookIdsChange={onSelectedBookIdsChange}
+                onClose={closePicker}
+              />
+            )}
+          </Box>
 
-        <button className="iconButton" title="Settings" aria-label="Settings">
-          ⚙︎
-        </button>
-      </div>
-    </header>
+          {/* Settings Button */}
+          <IconButton aria-label="Settings">
+            <SettingsIcon />
+          </IconButton>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

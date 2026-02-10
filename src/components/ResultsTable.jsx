@@ -1,50 +1,136 @@
-export default function ResultsTable({ rows, selectedBooks, activeTerm, onActiveTermChange }) {
-  return (
-    <div className="tableWrap">
-      <table className="tbl">
-        <thead>
-          <tr>
-            <th style={{ width: 50 }}>#</th>
-            <th style={{ width: 220 }}>Term</th>
-            <th style={{ width: 140 }}>Avg similarity</th>
-            {selectedBooks.map((b) => (
-              <th key={b.id}>
-                <div className="thTop">{b.label}</div>
-              </th>
-            ))}
-          </tr>
-        </thead>
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Box,
+  Paper,
+} from "@mui/material";
 
-        <tbody>
-          {rows.map((r, i) => {
-            const isActive = activeTerm === r.term;
-            return (
-              <tr key={r.term} className={isActive ? "activeRow" : ""} onClick={() => onActiveTermChange(r.term)}>
-                <td>{i + 1}</td>
-                <td className="termCell">{r.term}</td>
-                <td>{r.avg.toFixed(3)}</td>
-                {selectedBooks.map((b) => {
-                  const cell = r.byBook[b.id];
-                  return (
-                    <td key={b.id} className="numCell">
-                      {cell ? (
-                        <>
-                          <div className="sim">{cell.sim.toFixed(3)}</div>
-                          <div className="meta">
-                            {cell.conf.toFixed(1)}% (n={cell.n})
-                          </div>
-                        </>
-                      ) : (
-                        <div className="missing">—</div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+/**
+ * ResultsTable Component
+ * Displays similarity data in a tabular format with sortable columns
+ */
+export default function ResultsTable({ rows, selectedBooks, activeTerm, onActiveTermChange }) {
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
+
+  const handleRowClick = (term) => {
+    onActiveTermChange(term);
+  };
+
+  // ============================================================================
+  // Render Helpers
+  // ============================================================================
+
+  /**
+   * Render table header with book columns
+   */
+  const renderTableHeader = () => (
+    <TableHead>
+      <TableRow>
+        <TableCell width={50} sx={{ fontWeight: 700 }}>
+          #
+        </TableCell>
+        <TableCell width={220} sx={{ fontWeight: 700 }}>
+          Term
+        </TableCell>
+        <TableCell width={140} sx={{ fontWeight: 700 }}>
+          Avg similarity
+        </TableCell>
+        {selectedBooks.map((book) => (
+          <TableCell key={book.id} sx={{ fontWeight: 700 }}>
+            {book.label}
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+
+  /**
+   * Render a single table row for a term
+   */
+  const renderTermRow = (row, index) => {
+    const isActive = activeTerm === row.term;
+
+    return (
+      <TableRow
+        key={row.term}
+        onClick={() => handleRowClick(row.term)}
+        hover
+        sx={{
+          cursor: "pointer",
+          bgcolor: isActive ? "action.selected" : "inherit",
+          "&:hover": {
+            bgcolor: isActive ? "action.selected" : "action.hover",
+          },
+        }}
+      >
+        {/* Row number */}
+        <TableCell>{index + 1}</TableCell>
+
+        {/* Term name */}
+        <TableCell>
+          <Typography fontWeight={700} color="primary">
+            {row.term}
+          </Typography>
+        </TableCell>
+
+        {/* Average similarity */}
+        <TableCell>{row.avg.toFixed(3)}</TableCell>
+
+        {/* Book-specific data cells */}
+        {selectedBooks.map((book) => renderBookCell(book.id, row.byBook[book.id]))}
+      </TableRow>
+    );
+  };
+
+  /**
+   * Render a cell with book-specific similarity data
+   */
+  const renderBookCell = (bookId, cellData) => (
+    <TableCell key={bookId}>
+      {cellData ? renderCellWithData(cellData) : renderEmptyCell()}
+    </TableCell>
+  );
+
+  /**
+   * Render cell content when data is available
+   */
+  const renderCellWithData = (data) => (
+    <Box>
+      <Typography fontWeight={700} variant="body2">
+        {data.sim.toFixed(3)}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {data.conf.toFixed(1)}% (n={data.n})
+      </Typography>
+    </Box>
+  );
+
+  /**
+   * Render empty cell when no data is available
+   */
+  const renderEmptyCell = () => (
+    <Typography variant="body2" color="text.disabled">
+      —
+    </Typography>
+  );
+
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
+  return (
+    <TableContainer>
+      <Table sx={{ minWidth: 650 }} size="small">
+        {renderTableHeader()}
+        <TableBody>{rows.map(renderTermRow)}</TableBody>
+      </Table>
+    </TableContainer>
   );
 }

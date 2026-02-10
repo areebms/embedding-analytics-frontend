@@ -88,6 +88,7 @@ body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, 
 .controls{ display:flex; align-items:center; gap:12px; }
 .control{ display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:600; }
 select{ border:1px solid var(--line); border-radius:10px; padding: 8px 10px; background:var(--card); }
+.errorText{ color:#b91c1c; font-weight:600; font-size:12px; }
 
 .popover{
   position:absolute;

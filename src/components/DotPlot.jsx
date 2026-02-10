@@ -1,9 +1,20 @@
 import { useMemo, useState } from "react";
 
+const COLOR_PALETTE = [
+  "#e15759",
+  "#4e79a7",
+  "#59a14f",
+  "#f28e2b",
+  "#edc948",
+  "#b07aa1",
+  "#76b7b2",
+  "#ff9da7",
+  "#9c755f",
+  "#bab0ab",
+];
+
 function colorForIndex(i) {
-  // fixed palette for up to 10 books
-  const palette = ["#e15759", "#4e79a7", "#59a14f", "#f28e2b", "#edc948", "#b07aa1", "#76b7b2", "#ff9da7", "#9c755f", "#bab0ab"];
-  return palette[i % palette.length];
+  return COLOR_PALETTE[i % COLOR_PALETTE.length];
 }
 
 export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermChange }) {
@@ -17,11 +28,16 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
   const height = Math.max(220, topPad + rows.length * rowH + 30);
 
   const xMin = 0;
-  const xMax = 0.55; // you can compute from data if you want
+  const xMax = 0.55;
 
-  const bookIndex = useMemo(() => new Map(selectedBooks.map((b, i) => [b.id, i])), [selectedBooks]);
+  const bookIndex = useMemo(
+    () => new Map(selectedBooks.map((b, i) => [b.id, i])),
+    [selectedBooks]
+  );
 
   const x = (v) => leftPad + ((v - xMin) / (xMax - xMin)) * (width - leftPad - rightPad);
+
+  const gridTicks = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
 
   return (
     <div className="plotWrap">
@@ -35,8 +51,8 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
       </div>
 
       <svg className="plot" viewBox={`0 0 ${width} ${height}`} onMouseLeave={() => setHover(null)}>
-        {/* grid + axis */}
-        {[0, 0.1, 0.2, 0.3, 0.4, 0.5].map((tick) => (
+        {/* Grid and axis */}
+        {gridTicks.map((tick) => (
           <g key={tick}>
             <line x1={x(tick)} x2={x(tick)} y1={topPad - 10} y2={height - 26} className="gridLine" />
             <text x={x(tick)} y={height - 8} textAnchor="middle" className="axisText">
@@ -48,7 +64,7 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
           Similarity
         </text>
 
-        {/* rows */}
+        {/* Rows */}
         {rows.map((r, rowIdx) => {
           const y = topPad + rowIdx * rowH;
           const isActive = activeTerm === r.term;
@@ -59,10 +75,10 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
                 {r.term}
               </text>
 
-              {/* baseline */}
+              {/* Baseline */}
               <line x1={leftPad} x2={width - rightPad} y1={y} y2={y} className="rowLine" />
 
-              {/* dots */}
+              {/* Dots */}
               {Object.entries(r.byBook).map(([bookIdStr, v]) => {
                 const bookId = Number(bookIdStr);
                 const bi = bookIndex.get(bookId);
@@ -78,7 +94,7 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
                     r={5}
                     fill={colorForIndex(bi)}
                     opacity={activeTerm && !isActive ? 0.25 : 1}
-                    onMouseMove={() =>
+                    onMouseEnter={() =>
                       setHover({
                         term: r.term,
                         bookId,
@@ -87,6 +103,7 @@ export default function DotPlot({ rows, selectedBooks, activeTerm, onActiveTermC
                         conf: v.conf,
                       })
                     }
+                    onMouseLeave={() => setHover(null)}
                   />
                 );
               })}
