@@ -3,11 +3,6 @@ import {
   Box,
   Container,
   Paper,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   CssBaseline,
   ThemeProvider,
@@ -80,6 +75,11 @@ export default function App() {
     fetchBooks();
   }, []);
 
+  useEffect(() => {
+    setSimilarityCache({});
+    setSelectedBookIds([3300]);
+  }, [term]);
+
   const fetchBooks = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/books`);
@@ -87,6 +87,11 @@ export default function App() {
         throw new Error(`Books fetch failed: ${response.status}`);
       }
       const books = await response.json();
+      books.sort((a, b) => a.id - b.id);
+      books.forEach((book, index) => {
+        book.position = index;
+      });
+
       setAllBooks(books);
     } catch (error) {
       console.error("Error fetching books:", error);
@@ -107,7 +112,7 @@ export default function App() {
 
         // Find which books need data fetched
         const pendingBookIds = selectedBookIds.filter(
-          (bookId) => !similarityCache[bookId]
+          (bookId) => !similarityCache[bookId],
         );
 
         // All data is already cached
@@ -146,14 +151,20 @@ export default function App() {
   /**
    * Fetch similarity data for books not in cache
    */
-  const fetchMissingSimilarityData = async (pendingBookIds, selectedBookIds, cancelled) => {
+  const fetchMissingSimilarityData = async (
+    pendingBookIds,
+    selectedBookIds,
+    cancelled,
+  ) => {
     try {
       const fetchPromises = pendingBookIds.map(async (bookId) => {
         const url = `${API_BASE_URL}/similarity/${bookId}/${encodeURIComponent(term)}`;
         const response = await fetch(url);
 
         if (!response.ok) {
-          throw new Error(`Similarity fetch failed (${bookId}): ${response.status}`);
+          throw new Error(
+            `Similarity fetch failed (${bookId}): ${response.status}`,
+          );
         }
 
         const items = await response.json();
@@ -254,7 +265,7 @@ export default function App() {
    */
   const selectedBooks = useMemo(
     () => allBooks.filter((book) => selectedBookIds.includes(book.id)),
-    [allBooks, selectedBookIds]
+    [allBooks, selectedBookIds],
   );
 
   /**
@@ -285,76 +296,28 @@ export default function App() {
         />
 
         <Container maxWidth="xl" sx={{ py: 3 }}>
+          {/* Error message */}
+          {rowsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              Failed to load similarity data.
+            </Alert>
+          )}
           {/* Chart Panel */}
           <Paper elevation={0} sx={{ mb: 2, p: 3, borderRadius: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                mb: 3,
-                pb: 2,
-                borderBottom: 1,
-                borderColor: "divider",
-              }}
-            >
-              <Box>
-                <Typography variant="h5" component="h1" fontWeight={600}>
-                  Similar terms across selected books
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: "flex", gap: 2 }}>
-                {/* Ranking selector */}
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <InputLabel>Ranked by</InputLabel>
-                  <Select
-                    value={rankBy}
-                    label="Ranked by"
-                    onChange={(e) => setRankBy(e.target.value)}
-                  >
-                    <MenuItem value="avg">Average similarity</MenuItem>
-                    <MenuItem value="max">Max similarity</MenuItem>
-                    <MenuItem value="min">Min similarity</MenuItem>
-                  </Select>
-                </FormControl>
-
-                {/* Top N selector */}
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Showing top</InputLabel>
-                  <Select
-                    value={topN}
-                    label="Showing top"
-                    onChange={(e) => setTopN(Number(e.target.value))}
-                  >
-                    <MenuItem value={10}>10</MenuItem>
-                    <MenuItem value={25}>25</MenuItem>
-                    <MenuItem value={50}>50</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            </Box>
-
-            {/* Error message */}
-            {rowsError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                Failed to load similarity data.
-              </Alert>
-            )}
-
             <SimilarityScatterChart
               rows={displayRows}
               selectedBooks={selectedBooks}
               isLoading={isLoading}
+              setRankBy={setRankBy}
+              setTopN={setTopN}
+              topN={topN}
+              rankBy={rankBy}
             />
           </Paper>
 
           {/* Table Panel */}
           <Paper elevation={0} sx={{ p: 3, borderRadius: 3 }}>
-            <ResultsTable
-              rows={displayRows}
-              selectedBooks={selectedBooks}
-            />
+            <ResultsTable rows={displayRows} selectedBooks={selectedBooks} />
           </Paper>
         </Container>
       </Box>

@@ -9,10 +9,26 @@ import {
   Legend,
 } from "chart.js";
 import { Scatter } from "react-chartjs-2";
-import { Box, Chip, CircularProgress, Typography } from "@mui/material";
+import {
+  Box,
+  Chip,
+  CircularProgress,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 // Register Chart.js components
-ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+);
 
 // ============================================================================
 // Constants
@@ -46,12 +62,9 @@ function getColorForBook(bookIndex) {
  * Transform rows data into Chart.js dataset format
  */
 function createChartDatasets(rows, selectedBooks) {
-  const bookColorMap = new Map(
-    selectedBooks.map((book, index) => [book.id, { index, label: book.label }])
-  );
 
   // Create a dataset for each book
-  const datasets = selectedBooks.map((book, index) => {
+  const datasets = selectedBooks.map((book) => {
     const dataPoints = rows
       .map((row, rowIndex) => {
         const bookData = row.byBook[book.id];
@@ -71,11 +84,11 @@ function createChartDatasets(rows, selectedBooks) {
     return {
       label: `${book.id} - ${book.label}`,
       data: dataPoints,
-      backgroundColor: getColorForBook(index),
-      borderColor: getColorForBook(index),
+      backgroundColor: getColorForBook(book.position),
+      borderColor: getColorForBook(book.position),
       pointRadius: 6,
       pointHoverRadius: 8,
-      pointBackgroundColor: getColorForBook(index),
+      pointBackgroundColor: getColorForBook(book.position),
       pointBorderColor: "#fff",
       pointBorderWidth: 2,
       opacity: 1,
@@ -130,9 +143,14 @@ function createChartOptions(rows) {
       y: {
         type: "linear",
         reverse: true,
-        min: -0.5,
-        max: rows.length - 0.5,
+        min: 0,
+        max: Math.max(0, rows.length - 1),
         ticks: {
+          autoSkip: false,
+          stepSize: 1,
+          precision: 0,
+          maxRotation: 0,
+          minRotation: 0,
           callback: (value, index) => {
             const rowIndex = Math.round(value);
             if (rowIndex >= 0 && rowIndex < rows.length) {
@@ -149,12 +167,6 @@ function createChartOptions(rows) {
         },
       },
     },
-    onClick: (event, elements) => {
-      if (elements.length > 0) {
-        const element = elements[0];
-        const dataPoint = element.element.$context.raw;
-      }
-    },
   };
 }
 
@@ -170,6 +182,10 @@ export default function SimilarityScatterChart({
   rows,
   selectedBooks,
   isLoading,
+  setTopN,
+  rankBy,
+  setRankBy,
+  topN,
 }) {
   // ============================================================================
   // Computed Values
@@ -195,10 +211,10 @@ export default function SimilarityScatterChart({
       {selectedBooks.map((book, index) => (
         <Chip
           key={book.id}
-          label={`${book.id} - ${book.label}`}
+          label={book.label}
           size="small"
           sx={{
-            bgcolor: getColorForBook(index),
+            bgcolor: getColorForBook(book.position),
             color: "#fff",
             fontWeight: 600,
             "& .MuiChip-label": {
@@ -239,7 +255,7 @@ export default function SimilarityScatterChart({
   );
 
   const renderChart = () => (
-    <Box sx={{ height: Math.max(400, rows.length * 30 + 100) }}>
+    <Box sx={{ height: Math.max(400, rows.length * 12 + 80) }}>
       <Scatter data={chartData} options={chartOptions} />
     </Box>
   );
@@ -258,7 +274,48 @@ export default function SimilarityScatterChart({
 
   return (
     <Box>
-      {renderLegend()}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          mb: 1,
+          pb: 1,
+          borderBottom: 1,
+          borderColor: "divider",
+        }}
+      >
+        {renderLegend()}
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {/* Ranking selector */}
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Ranked by</InputLabel>
+            <Select
+              value={rankBy}
+              label="Ranked by"
+              onChange={(e) => setRankBy(e.target.value)}
+            >
+              <MenuItem value="avg">Average similarity</MenuItem>
+              <MenuItem value="max">Max similarity</MenuItem>
+              <MenuItem value="min">Min similarity</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Top N selector */}
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Showing top</InputLabel>
+            <Select
+              value={topN}
+              label="Showing top"
+              onChange={(e) => setTopN(Number(e.target.value))}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
       {renderChart()}
     </Box>
   );
