@@ -106,7 +106,42 @@ function createRangeDatasets(rows, selectedBooks) {
 /**
  * Create Chart.js options configuration
  */
-function createChartOptions(rows) {
+function computeSimilarityRange(rows, selectedBooks) {
+  const values = [];
+  rows.forEach((row) => {
+    selectedBooks.forEach((book) => {
+      const value = row.byBook[book.id]?.similarity;
+      if (typeof value === "number") {
+        values.push(value);
+      }
+    });
+  });
+
+  if (values.length === 0) {
+    return { min: 0, max: 1 };
+  }
+
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+
+  if (min === max) {
+    const padding = min === 0 ? 0.05 : Math.abs(min) * 0.05;
+    min -= padding;
+    max += padding;
+  }
+
+  const padding = (max - min) * 0.05;
+  min -= padding;
+  max += padding;
+
+  return {
+    min: Math.max(-1, min),
+    max: Math.min(1, max),
+  };
+}
+
+function createChartOptions(rows, selectedBooks) {
+  const xRange = computeSimilarityRange(rows, selectedBooks);
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -131,8 +166,9 @@ function createChartOptions(rows) {
     scales: {
       x: {
         type: "linear",
-        min: 0,
-        max: 0.55,
+        min: xRange.min,
+        max: xRange.max,
+        grace: "5%",
         title: {
           display: true,
           text: "Similarity",
@@ -156,7 +192,7 @@ function createChartOptions(rows) {
           precision: 0,
           maxRotation: 0,
           minRotation: 0,
-          callback: (value, index) => {
+          callback: (value) => {
             const rowIndex = Math.round(value);
             if (rowIndex >= 0 && rowIndex < rows.length) {
               return rows[rowIndex].term;
@@ -201,8 +237,8 @@ export default function SimilarityScatterChart({
   }, [rows, selectedBooks]);
 
   const chartOptions = useMemo(() => {
-    return createChartOptions(rows);
-  }, [rows]);
+    return createChartOptions(rows, selectedBooks);
+  }, [rows, selectedBooks]);
 
   const renderLoadingState = () => (
     <Box

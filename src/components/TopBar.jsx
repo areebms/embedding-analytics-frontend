@@ -169,7 +169,7 @@ export default function TopBar({
           />
 
           {/* Ranking selector */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Ranked by</InputLabel>
             <Select
               value={rankBy}
