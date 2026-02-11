@@ -12,10 +12,6 @@ import TopBar from "./components/TopBar";
 import SimilarityScatterChart from "./components/SimilarityScatterChart";
 import ResultsTable from "./components/ResultsTable";
 
-// ============================================================================
-// Theme Configuration
-// ============================================================================
-
 const theme = createTheme({
   palette: {
     primary: {
@@ -37,11 +33,8 @@ const theme = createTheme({
   },
 });
 
-// ============================================================================
-// Constants
-// ============================================================================
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.API_URL;
 
 export default function App() {
   // Search and filtering state
