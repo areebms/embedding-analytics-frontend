@@ -47,6 +47,8 @@ export default function App() {
   // Search and filtering state
   const [term, setTerm] = useState("market");
   const [selectedBookIds, setSelectedBookIds] = useState([3300]);
+  const [selectedBookId, setSelectedBookId] = useState(null);
+
   const [topN, setTopN] = useState(25);
   const [rankBy, setRankBy] = useState("max"); // max | min
 
@@ -328,6 +330,8 @@ export default function App() {
           selectedBookIds={selectedBookIds}
           onSelectedBookIdsChange={setSelectedBookIds}
           selectedBooks={selectedBooks}
+          selectedBookId={selectedBookId}
+          setSelectedBookId={setSelectedBookId}
           rankBy={rankBy}
           onRankByChange={setRankBy}
           topN={topN}

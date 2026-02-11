@@ -29,6 +29,8 @@ export default function TopBar({
   selectedBookIds,
   onSelectedBookIdsChange,
   selectedBooks = [],
+  selectedBookId,
+  setSelectedBookId,
   rankBy,
   onRankByChange,
   topN,
@@ -70,12 +72,21 @@ export default function TopBar({
           key={book.id}
           label={book.label}
           size="small"
+          clickable
+          onClick={() => setSelectedBookId(book.id)}
           sx={{
-            bgcolor: getColorForBook(book.position),
-            color: "#fff",
+            bgcolor:
+              selectedBookId === book.id
+                ? getColorForBook(book.position)
+                : "transparent",
+            color:
+              selectedBookId === book.id
+                ? "#fff"
+                : getColorForBook(book.position),
+            border: `1px solid ${getColorForBook(book.position)}`,
             fontWeight: 600,
             "& .MuiChip-label": {
-              px: 1.5,
+              px: 2,
             },
           }}
         />
