@@ -3,6 +3,7 @@ import {
   Chart as ChartJS,
   LinearScale,
   PointElement,
+  LineController,
   LineElement,
   Title,
   Tooltip,
@@ -16,6 +17,7 @@ import { getColorForBook } from "../utils/bookColors";
 ChartJS.register(
   LinearScale,
   PointElement,
+  LineController,
   LineElement,
   Title,
   Tooltip,
