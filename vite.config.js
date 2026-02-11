@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/similarity': {
-          target: env.API_URL,
+          target: env.VITE_API_URL,
           changeOrigin: true,
         },
       },

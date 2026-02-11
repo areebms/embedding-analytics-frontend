@@ -34,7 +34,7 @@ const theme = createTheme({
 });
 
 
-const API_BASE_URL = import.meta.env.API_URL;
+const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 export default function App() {
   // Search and filtering state
@@ -68,7 +68,7 @@ export default function App() {
 
   const fetchBooks = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/books`);
+      const response = await fetch(`${VITE_API_URL}/books`);
       if (!response.ok) {
         throw new Error(`Books fetch failed: ${response.status}`);
       }
@@ -140,7 +140,7 @@ export default function App() {
   const fetchMissingSimilarityData = async (pendingBookIds, cancelled) => {
     try {
       const fetchPromises = pendingBookIds.map(async (bookId) => {
-        const url = `${API_BASE_URL}/similarity/${bookId}/${encodeURIComponent(term)}`;
+        const url = `${VITE_API_URL}/similarity/${bookId}/${encodeURIComponent(term)}`;
         const response = await fetch(url);
 
         if (!response.ok) {
