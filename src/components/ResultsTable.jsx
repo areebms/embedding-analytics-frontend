@@ -44,7 +44,7 @@ export default function ResultsTable({ rows, selectedBooks, calcStats, onClick }
           Term
         </TableCell>
         <TableCell width={140} sx={{ fontWeight: 700 }}>
-          Avg similarity
+          Mean Similarity
         </TableCell>
         {selectedBooks.map((book) => (
           <TableCell key={book.id} sx={{ fontWeight: 700 }}>
@@ -94,7 +94,7 @@ export default function ResultsTable({ rows, selectedBooks, calcStats, onClick }
         </TableCell>
 
         {/* Average similarity */}
-        <TableCell>{row.avg.toFixed(3)}</TableCell>
+        <TableCell>{row.mean.toFixed(3)}</TableCell>
 
         {/* Book-specific data cells */}
         {selectedBooks.map((book) => renderBookCell(book.id, row.byBook[book.id]))}

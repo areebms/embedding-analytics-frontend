@@ -48,7 +48,7 @@ export default function App() {
   const [term, setTerm] = useState("market");
   const [selectedBookIds, setSelectedBookIds] = useState([3300]);
   const [topN, setTopN] = useState(25);
-  const [rankBy, setRankBy] = useState("avg"); // avg | max | min
+  const [rankBy, setRankBy] = useState("max"); // max | min
 
   // Data state
   const [allBooks, setAllBooks] = useState([]);
@@ -68,7 +68,7 @@ export default function App() {
   useEffect(() => {
     setSimilarityCache({});
     setSelectedBookIds([3300]);
-    setCalculatedRowData([])
+    setCalculatedRowData([]);
   }, [term]);
 
   const fetchBooks = async () => {
@@ -234,9 +234,7 @@ export default function App() {
 
       return {
         ...row,
-        avg: count ? total / count : 0,
-        max: count ? Math.max(...similarities) : 0,
-        min: count ? Math.min(...similarities) : 0,
+        mean: count ? total / count : 0,
       };
     });
 
@@ -277,9 +275,9 @@ export default function App() {
       return hasAllBooks && meetsMinCount;
     };
 
-    const sortedRows = [...calculatedRowData].sort((a, b) => {
-      return (b[rankBy] ?? 0) - (a[rankBy] ?? 0);
-    });
+    const sortedRows = calculatedRowData.sort((a, b) =>
+      rankBy === "max" ? b.mean - a.mean : a.mean - b.mean,
+    );
 
     const filteredRows = sortedRows.filter((row) => {
       const shouldKeep = shouldKeepRow(row);
@@ -304,7 +302,6 @@ export default function App() {
 
         return missing || belowMin ? count + 1 : count;
       }, 0);
-
     });
 
     return { rows: filteredSlicedRows, stats: bookData };

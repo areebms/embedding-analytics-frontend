@@ -176,7 +176,6 @@ export default function TopBar({
               label="Ranked by"
               onChange={(e) => onRankByChange(e.target.value)}
             >
-              <MenuItem value="avg">Average similarity</MenuItem>
               <MenuItem value="max">Max similarity</MenuItem>
               <MenuItem value="min">Min similarity</MenuItem>
             </Select>
