@@ -101,7 +101,6 @@ export default function App() {
     const loadSimilarityData = async () => {
       try {
         setRowsError(null);
-        setIsLoading(true);
 
         // Find which books need data fetched
         const pendingBookIds = selectedBookIds.filter(
@@ -110,13 +109,14 @@ export default function App() {
 
         // All data is already cached
         if (pendingBookIds.length === 0) {
-          computeRows(selectedBookIds, similarityCache);
           setIsLoading(false);
           return;
         }
 
+        setIsLoading(true);
+
         // Fetch missing similarity data
-        fetchMissingSimilarityData(pendingBookIds, selectedBookIds, cancelled);
+        fetchMissingSimilarityData(pendingBookIds, cancelled);
       } catch (error) {
         if (!cancelled) {
           console.error("Error loading similarity data:", error);
@@ -144,11 +144,7 @@ export default function App() {
   /**
    * Fetch similarity data for books not in cache
    */
-  const fetchMissingSimilarityData = async (
-    pendingBookIds,
-    selectedBookIds,
-    cancelled,
-  ) => {
+  const fetchMissingSimilarityData = async (pendingBookIds, cancelled) => {
     try {
       const fetchPromises = pendingBookIds.map(async (bookId) => {
         const url = `${API_BASE_URL}/similarity/${bookId}/${encodeURIComponent(term)}`;
@@ -176,8 +172,6 @@ export default function App() {
             updatedCache[bookId] = items;
           }
 
-          // Compute rows with the updated cache
-          computeRows(selectedBookIds, updatedCache);
           setIsLoading(false);
 
           return updatedCache;
@@ -225,13 +219,15 @@ export default function App() {
 
     // Calculate aggregate statistics for each term
     const rows = Array.from(termDataMap.values()).map((row) => {
-      const similarities = Object.values(row.byBook).map(
-        (data) => data.similarity,
-      );
+      const similarities = Object.entries(row.byBook)
+        .filter(([bookId]) => String(bookId) !== selectedBookId)
+        .map(([, data]) => data.similarity);
+
       const total = similarities.reduce(
         (sum, similarity) => sum + similarity,
         0,
       );
+
       const count = similarities.length;
 
       return {
@@ -242,6 +238,25 @@ export default function App() {
 
     setCalculatedRowData(rows);
   };
+
+  /**
+   * Recompute rows whenever the selected reference book changes
+   * and all required similarity data is available.
+   */
+  useEffect(() => {
+    if (!selectedBookIds.length) {
+      setCalculatedRowData([]);
+      return;
+    }
+
+    const hasAllSimilarityData = selectedBookIds.every(
+      (bookId) => similarityCache[bookId],
+    );
+
+    if (hasAllSimilarityData) {
+      computeRows(selectedBookIds, similarityCache);
+    }
+  }, [selectedBookId, selectedBookIds, similarityCache]);
 
   // ============================================================================
   // Derived State
@@ -277,9 +292,9 @@ export default function App() {
       return hasAllBooks && meetsMinCount;
     };
 
-    const sortedRows = calculatedRowData.sort((a, b) =>
-      rankBy === "max" ? b.mean - a.mean : a.mean - b.mean,
-    );
+    const sortedRows = calculatedRowData
+      .map((row) => ({ ...row, sortable: !selectedBookId ? row.mean : row.byBook[selectedBookId]?.similarity - row.mean }))
+      .sort((a, b) => (rankBy === "max" ? b.sortable - a.sortable : a.sortable - b.sortable));
 
     const filteredRows = sortedRows.filter((row) => {
       const shouldKeep = shouldKeepRow(row);
@@ -307,7 +322,14 @@ export default function App() {
     });
 
     return { rows: filteredSlicedRows, stats: bookData };
-  }, [calculatedRowData, rankBy, topN, selectedBookIds, similarityCache]);
+  }, [
+    calculatedRowData,
+    rankBy,
+    topN,
+    selectedBookId,
+    selectedBookIds,
+    similarityCache,
+  ]);
 
   useEffect(() => {
     setBookCalculationStats(displayRowsData.stats);
@@ -318,7 +340,6 @@ export default function App() {
   // ============================================================================
   // Render
   // ============================================================================
-  console.log(calculatedRowData);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

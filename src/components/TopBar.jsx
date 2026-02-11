@@ -73,14 +73,16 @@ export default function TopBar({
           label={book.label}
           size="small"
           clickable
-          onClick={() => setSelectedBookId(book.id)}
+          onClick={() =>
+            selectedBookIds.length > 1 && setSelectedBookId(String(book.id))
+          }
           sx={{
             bgcolor:
-              selectedBookId === book.id
+              selectedBookId === String(book.id)
                 ? getColorForBook(book.position)
                 : "transparent",
             color:
-              selectedBookId === book.id
+              selectedBookId === String(book.id)
                 ? "#fff"
                 : getColorForBook(book.position),
             border: `1px solid ${getColorForBook(book.position)}`,
