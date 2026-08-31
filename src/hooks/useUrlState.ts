@@ -11,6 +11,8 @@ import type { TermRanking } from "../types/api";
 const DEFAULT_EXPRESSION = "market";
 const VIEW = "overview";
 
+// The code calls this "ranking"; the query param stays `sort` because links
+// people have already shared carry it. Rename the symbol, never the string.
 const RANKING_PARAM = "sort";
 
 function toRanking(value: string | null): TermRanking {

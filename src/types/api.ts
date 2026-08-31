@@ -22,21 +22,18 @@ export interface SemanticDriftRequestBody {
   book_ids: number[];
 }
 
-export interface DefinitionalAgreement {
+// One book's agreement reading. `n_books` is present only on the to-corpus
+// variant; nothing here branches on it, so it stays optional rather than
+// splitting the type -- a union of an interface with its own subtype narrows
+// to nothing without a discriminant.
+export interface BookAgreement {
   book_id: number;
   mean_local_similarity: number;
   ci: [number, number];
   occurrences: number;
   n_seeds: number;
+  n_books?: number;
 }
-
-export interface DefinitionalAgreementToCorpus extends DefinitionalAgreement {
-  n_books: number;
-}
-
-export type BookAgreement =
-  | DefinitionalAgreement
-  | DefinitionalAgreementToCorpus;
 
 export interface ExprData {
   expr: string;
@@ -54,6 +51,9 @@ export interface TermData {
   books: BookAgreement[];
 }
 
+// Client-side ranking only -- both fields are present on every TermData the
+// backend returns, so which one sorts/draws the chart is a display choice,
+// not a request parameter.
 export const TERM_RANKINGS = ["stability", "instability"] as const;
 export type TermRanking = (typeof TERM_RANKINGS)[number];
 export const DEFAULT_TERM_RANKING: TermRanking = "stability";

@@ -13,6 +13,7 @@ import {
 import { buildDiachronicSeries, isDrawn } from "./DiachronicChart/series";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
+import { TERM_RANKINGS } from "../types/api";
 
 export default function ResultsTable({ payload, allBooks, ranking }) {
   const { series, roster } = useMemo(
@@ -46,7 +47,7 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
               align="center"
               sx={{ ...HEAD, ...CELL }}
             >
-              {labels.columns.booksGroup}
+              {labels.booksGroup}
             </TableCell>
           </TableRow>
           <TableRow>
@@ -136,13 +137,15 @@ function TermCell({ series, ranking }) {
   if (!series.stats) return term;
 
   const { n_books_in } = series.stats;
-  const other = ranking === "stability" ? "instability" : "stability";
+  const others = TERM_RANKINGS.filter((r) => r !== ranking);
   return (
     <Tooltip
       title={
-        `${labels.columns[other].short} ` +
-        `${series.stats[other].toFixed(3)} · measured across the ` +
-        `${n_books_in} book${n_books_in === 1 ? "" : "s"} that use it.`
+        others
+          .map((r) => `${labels.columns[r].short} ${series.stats[r].toFixed(3)}`)
+          .join(" · ") +
+        ` · measured across the ${n_books_in} ` +
+        `book${n_books_in === 1 ? "" : "s"} that use it.`
       }
     >
       <Box sx={{ cursor: "help", display: "inline-block" }}>{term}</Box>
@@ -187,41 +190,43 @@ function MeasurementValue({ point }) {
   );
 }
 
-function GapText({ cause, missingTerms }) {
-  const copy = labels.gaps[cause];
+// The dotted underline is the only thing marking a cell as hoverable, so it
+// and the tooltip stay in one place -- a column header and an empty cell are
+// both making the same promise to the reader.
+function Hint({ title, children, ...props }) {
   return (
-    <Tooltip title={`${copy.short} — ${copy.detail(missingTerms)}`}>
-      <Typography
-        variant="body2"
-        color="text.disabled"
-        sx={{ cursor: "help", borderBottom: "1px dotted currentColor" }}
-        component="span"
-      >
-        —
-      </Typography>
-    </Tooltip>
-  );
-}
-
-function HelpLabel({ short, help }) {
-  return (
-    <Tooltip title={help}>
-      <Box
-        component="span"
-        sx={{ cursor: "help", borderBottom: "1px dotted currentColor" }}
-      >
-        {short}
+    <Tooltip title={title}>
+      <Box component="span" sx={HELP} {...props}>
+        {children}
       </Box>
     </Tooltip>
   );
 }
 
+function GapText({ cause, missingTerms }) {
+  const copy = labels.gaps[cause];
+  return (
+    <Hint
+      title={`${copy.short} — ${copy.detail(missingTerms)}`}
+      color="text.disabled"
+    >
+      {DASH}
+    </Hint>
+  );
+}
+
+function HelpLabel({ short, help }) {
+  return <Hint title={help}>{short}</Hint>;
+}
+
 const Dash = () => (
   <Typography variant="body2" color="text.disabled">
-    —
+    {DASH}
   </Typography>
 );
 
+const DASH = "\u2014";
+const HELP = { cursor: "help", borderBottom: "1px dotted currentColor" };
 const HEAD = { fontWeight: 700 };
 const NUM = { fontVariantNumeric: "tabular-nums" };
 const CELL = { py: 0.5 };

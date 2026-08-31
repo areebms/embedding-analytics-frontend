@@ -83,7 +83,7 @@ export default function DiachronicChart({
         series.map((s) => [
           s.term,
           {
-            value: (row) => row.values[s.term]?.agreement,
+            agreement: (row) => row.values[s.term]?.agreement,
             band: (row) => row.values[s.term]?.band,
             ci: (row) => row.values[s.term]?.ci,
           },
@@ -193,7 +193,7 @@ export default function DiachronicChart({
               <Line
                 key={s.term}
                 type="linear"
-                dataKey={accessors.get(s.term).value}
+                dataKey={accessors.get(s.term).agreement}
                 name={s.term}
                 stroke={s.color}
                 strokeWidth={s.isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}

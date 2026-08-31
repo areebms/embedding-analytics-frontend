@@ -5,6 +5,8 @@ export const labels = {
   agreement: {
     label: "Definitional agreement",
     pinned: (bookLabel: string) => `Definitional agreement with ${bookLabel}`,
+    pointTitle: (term: string, bookLabel: string) =>
+      `Usage of ${term} in ${bookLabel}`,
   },
 
   comparativeTerms: {
@@ -36,6 +38,9 @@ export const labels = {
     },
   },
 
+  // Indexed by ranking at two call sites in ResultsTable, so the `satisfies`
+  // is what keeps a new TermRanking from reaching the table with no column
+  // copy behind it.
   columns: {
     stability: {
       short: "Stability",
@@ -49,6 +54,7 @@ export const labels = {
         "How much that closeness varies from book to book. Higher means the " +
         "books disagree about this aspect of the definition.",
     },
-    booksGroup: "Definitional agreement, by book",
-  },
+  } satisfies Record<TermRanking, { short: string; help: string }>,
+
+  booksGroup: "Definitional agreement, by book",
 };

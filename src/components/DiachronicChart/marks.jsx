@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import { Text, usePlotArea, useYAxisScale } from "recharts";
 
 import { INK } from "./palette";
+import { labels } from "../../content/labels";
 import {
   LABEL_LINE_H,
   LABEL_FONT_SIZE,
@@ -51,48 +52,54 @@ export function DotTooltip({ active, payload, activeTerm, color, measure }) {
       }}
     >
       <div style={{ fontWeight: 700, marginBottom: 4 }}>
-        Usage of {activeTerm} in {row.book}
+        {labels.agreement.pointTitle(activeTerm, row.book)}
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span
-          style={{
-            flex: "0 0 auto",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: color,
-            display: "inline-block",
-          }}
-        />
-        <span>{measure}</span>
-        <span
-          style={{ marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}
-        >
-          {point.agreement.toFixed(3)}
-        </span>
-      </div>
+      <TooltipRow marker={color} label={measure}>
+        {point.agreement.toFixed(3)}
+      </TooltipRow>
       {lo != null && (
-        <div
-          style={{
-            display: "flex",
-            fontSize: 11,
-            marginTop: 2,
-            marginLeft: 14,
-            alignItems: "baseline",
-            gap: 6,
-          }}
-        >
-          <span>{"95% CI"}</span>
-          <span
-            style={{ marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}
-          >
-            [{lo.toFixed(3)}, {hi.toFixed(3)}]
-          </span>
-        </div>
+        <TooltipRow label="95% CI" indent small>
+          [{lo.toFixed(3)}, {hi.toFixed(3)}]
+        </TooltipRow>
       )}
     </Box>
   );
 }
+
+// Both rows are read as a label/number pair down a shared right edge, so they
+// share the spec -- the CI has to stay aligned under the value it qualifies.
+function TooltipRow({ marker, label, indent, small, children }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: 6,
+        ...(small && { fontSize: 11, marginTop: 2 }),
+        ...(indent && { marginLeft: DOT_SIZE + 6 }),
+      }}
+    >
+      {marker && (
+        <span
+          style={{
+            flex: "0 0 auto",
+            width: DOT_SIZE,
+            height: DOT_SIZE,
+            borderRadius: "50%",
+            background: marker,
+            display: "inline-block",
+          }}
+        />
+      )}
+      <span>{label}</span>
+      <span style={{ marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+const DOT_SIZE = 8;
 
 export function SeriesLabels({ series, width, onHover }) {
   const plot = usePlotArea();

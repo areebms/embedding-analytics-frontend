@@ -126,7 +126,7 @@ src/
 │   │   ├── index.jsx               # Suspense boundary; the chart itself is a lazy chunk
 │   │   ├── Chart.jsx               # The Recharts chart
 │   │   ├── ChartMessage.jsx        # Spinner and empty/error states, at chart height
-│   │   ├── series.ts               # Payload -> one series per term; shared with DriftTable
+│   │   ├── series.ts               # Payload -> one series per term; shared with ResultsTable
 │   │   ├── types.ts                # The series shapes both the chart and the table read
 │   │   ├── layout.ts               # Chart geometry + label measuring, importable without recharts
 │   │   ├── marks.jsx               # Custom dots, bands, and on-chart term labels
@@ -137,13 +137,13 @@ src/
 │   ├── TopBar/
 │   │   ├── index.jsx
 │   │   ├── VectorExpressionInput.tsx
-│   │   └── ComparativeTermsSort.tsx # "Stable" / "Unstable"
-│   ├── DriftTable.jsx
+│   │   └── ComparativeTermsRanking.tsx # "Stable" / "Unstable"
+│   ├── ResultsTable.jsx
 │   └── GuideModal.jsx
 ├── content/
 │   └── labels.ts                   # The copy the chart and the table must keep identical
 ├── hooks/
-│   ├── useUrlState.ts              # Expression in ?q, sort in ?sort, pinned book in the path
+│   ├── useUrlState.ts              # Expression in ?q, ranking in ?sort, pinned book in the path
 │   └── useVectorExpression.ts
 ├── types/
 │   ├── api.ts                      # Mirrors the backend's pydantic schemas

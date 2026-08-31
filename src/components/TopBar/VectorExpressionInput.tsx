@@ -64,6 +64,11 @@ function VectorExpressionChips({
   );
 }
 
+/**
+ * Resolve free-typed text to a vocabulary term, case-insensitively. Returns
+ * null when the text names nothing in the corpus -- inventing a term would send
+ * a word the embeddings have never seen.
+ */
 function matchTerm(text: string, allTerms: TermResponse[]): Option | null {
   const needle = text.trim().toLowerCase();
   if (!needle) return null;
@@ -237,6 +242,11 @@ export default function VectorExpressionInput({
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // `expression` is URL-derived, so it also changes from OUTSIDE this input --
+  // Back/Forward, or a term clicked in the results table. Without this re-seed
+  // the chips keep showing the old expression while the chart plots the new
+  // one. Remounting on a `key` would do it too, but would also destroy the
+  // describe notice that handleDescribeSubmit sets in the same tick.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraftExpression(expression);
@@ -340,6 +350,10 @@ export default function VectorExpressionInput({
                 }
               }}
               onChange={(_, option) => {
+                // freeSolo hands back a raw STRING when Enter is pressed with
+                // no option highlighted. Dropping it made Enter a no-op while
+                // Submit stayed disabled for the same input; resolve it against
+                // the vocabulary instead.
                 const resolved =
                   typeof option === "string"
                     ? matchTerm(option, allTerms)
