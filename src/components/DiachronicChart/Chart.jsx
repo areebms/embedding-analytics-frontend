@@ -20,8 +20,10 @@ import {
   CHART_HEIGHT,
   CHART_MARGIN,
   Y_AXIS_WIDTH,
-  AXIS_LABEL_SIZE,
-  TICK_LABEL_SIZE,
+  AXIS_TITLE_STYLE,
+  AXIS_LINE,
+  TICK,
+  NUMERIC_TICK,
   QUERY_DOT_R,
   NEIGHBOUR_DOT_R,
   QUERY_STROKE_W,
@@ -31,13 +33,6 @@ import {
   LABEL_GAP_X,
   labelColumnWidth,
 } from "./layout";
-
-const AXIS_TITLE_STYLE = {
-  textAnchor: "middle",
-  fill: INK.title,
-  fontWeight: 600,
-  fontSize: AXIS_LABEL_SIZE,
-};
 
 const formatTick = (v) => v.toFixed(2);
 
@@ -124,9 +119,9 @@ export default function DiachronicChart({
             }}
             allowDecimals={false}
             height={38}
-            tick={{ fontSize: TICK_LABEL_SIZE, fill: INK.tick }}
-            axisLine={{ stroke: INK.axis }}
-            tickLine={{ stroke: INK.axis }}
+            tick={TICK}
+            axisLine={AXIS_LINE}
+            tickLine={AXIS_LINE}
           >
             {X_AXIS_TITLE}
           </XAxis>
@@ -138,13 +133,9 @@ export default function DiachronicChart({
             niceTicks="none"
             tickFormatter={formatTick}
             width={Y_AXIS_WIDTH}
-            tick={{
-              fontSize: TICK_LABEL_SIZE,
-              fill: INK.tick,
-              fontVariantNumeric: "tabular-nums",
-            }}
-            axisLine={{ stroke: INK.axis }}
-            tickLine={{ stroke: INK.axis }}
+            tick={NUMERIC_TICK}
+            axisLine={AXIS_LINE}
+            tickLine={AXIS_LINE}
           >
             <Label
               value={yTitle}

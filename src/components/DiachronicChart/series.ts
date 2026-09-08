@@ -1,4 +1,5 @@
 import { seriesColor, QUERY_COLOR } from "./palette";
+import { generateLinearTicks } from "./layout";
 import { LOCAL_ANCHOR_FLOOR, DEFAULT_TERM_RANKING } from "../../types/api";
 import type {
   BookResponse,
@@ -225,34 +226,5 @@ function generateYearTicks(min: number, max: number): number[] {
   const start = Math.ceil(min / step) * step;
   const ticks: number[] = [];
   for (let t = start; t <= max; t += step) ticks.push(t);
-  return ticks;
-}
-
-const TARGET_TICKS = 6;
-
-function generateLinearTicks(min: number, max: number): number[] {
-  const span = max - min;
-  if (!(span > 0)) return [min];
-
-  const rough = span / (TARGET_TICKS - 1);
-  const magnitude = 10 ** Math.floor(Math.log10(rough));
-  const normalised = rough / magnitude;
-  const step =
-    (normalised >= 7.07
-      ? 10
-      : normalised >= 3.16
-        ? 5
-        : normalised >= 1.41
-          ? 2
-          : 1) * magnitude;
-
-  const ticks: number[] = [];
-  for (
-    let t = Math.ceil(min / step) * step;
-    t <= max + step * 1e-9;
-    t += step
-  ) {
-    ticks.push(Math.round(t / step) * step);
-  }
   return ticks;
 }

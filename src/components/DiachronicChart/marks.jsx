@@ -1,12 +1,13 @@
 import { useMemo } from "react";
-import { Box } from "@mui/material";
 import { Text, usePlotArea, useYAxisScale } from "recharts";
 
 import { INK } from "./palette";
 import { labels } from "../../content/labels";
+import { TooltipCard, TooltipTitle, TooltipRow } from "../chartTooltip";
 import {
   LABEL_LINE_H,
   LABEL_FONT_SIZE,
+  TERM_LABEL_HALO,
   labelLines,
   stackLabels,
   termWeight,
@@ -36,61 +37,16 @@ export function DotTooltip({ active, payload, activeTerm, color, measure }) {
   const point = active && activeTerm ? row?.values?.[activeTerm] : null;
   if (!point) return null;
   return (
-    <Box
-      sx={{
-        background: "rgba(17,24,39,0.94)",
-        color: "#fff",
-        borderRadius: 1,
-        px: 1.5,
-        py: 1,
-        fontSize: 12,
-        lineHeight: 1.55,
-        pointerEvents: "none",
-        boxShadow: 3,
-        whiteSpace: "nowrap",
-      }}
-    >
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>
+    <TooltipCard>
+      <TooltipTitle>
         {labels.agreement.pointTitle(activeTerm, row.book)}
-      </div>
+      </TooltipTitle>
       <TooltipRow marker={color} label={measure}>
         {point.agreement.toFixed(3)}
       </TooltipRow>
-    </Box>
+    </TooltipCard>
   );
 }
-
-// Read as a label/number pair down a shared right edge.
-function TooltipRow({ marker, label, children }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: 6,
-      }}
-    >
-      {marker && (
-        <span
-          style={{
-            flex: "0 0 auto",
-            width: DOT_SIZE,
-            height: DOT_SIZE,
-            borderRadius: "50%",
-            background: marker,
-            display: "inline-block",
-          }}
-        />
-      )}
-      <span>{label}</span>
-      <span style={{ marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}>
-        {children}
-      </span>
-    </div>
-  );
-}
-
-const DOT_SIZE = 8;
 
 export function SeriesLabels({ series, width, onHover }) {
   const plot = usePlotArea();
@@ -130,10 +86,7 @@ export function SeriesLabels({ series, width, onHover }) {
               fontSize={LABEL_FONT_SIZE}
               fontWeight={termWeight(s.isQuery)}
               fill={s.color}
-              stroke={INK.surface}
-              strokeWidth={3}
-              strokeLinejoin="round"
-              paintOrder="stroke"
+              {...TERM_LABEL_HALO}
               pointerEvents="none"
             >
               {s.term}
