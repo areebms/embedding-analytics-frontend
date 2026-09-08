@@ -29,9 +29,7 @@ export interface SemanticDriftRequestBody {
 export interface BookAgreement {
   book_id: number;
   mean_local_similarity: number;
-  ci: [number, number];
   occurrences: number;
-  n_seeds: number;
   n_books?: number;
 }
 

@@ -35,7 +35,6 @@ export function DotTooltip({ active, payload, activeTerm, color, measure }) {
   const row = payload?.[0]?.payload;
   const point = active && activeTerm ? row?.values?.[activeTerm] : null;
   if (!point) return null;
-  const [lo, hi] = point.band ?? [];
   return (
     <Box
       sx={{
@@ -57,26 +56,18 @@ export function DotTooltip({ active, payload, activeTerm, color, measure }) {
       <TooltipRow marker={color} label={measure}>
         {point.agreement.toFixed(3)}
       </TooltipRow>
-      {lo != null && (
-        <TooltipRow label="95% CI" indent small>
-          [{lo.toFixed(3)}, {hi.toFixed(3)}]
-        </TooltipRow>
-      )}
     </Box>
   );
 }
 
-// Both rows are read as a label/number pair down a shared right edge, so they
-// share the spec -- the CI has to stay aligned under the value it qualifies.
-function TooltipRow({ marker, label, indent, small, children }) {
+// Read as a label/number pair down a shared right edge.
+function TooltipRow({ marker, label, children }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "baseline",
         gap: 6,
-        ...(small && { fontSize: 11, marginTop: 2 }),
-        ...(indent && { marginLeft: DOT_SIZE + 6 }),
       }}
     >
       {marker && (

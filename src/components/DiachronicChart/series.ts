@@ -82,7 +82,6 @@ export function buildDiachronicSeries(
         points.push({
           ...base,
           agreement: raw.mean_local_similarity,
-          agreementCi: raw.ci,
           measurement: raw,
         });
       } else {
@@ -127,7 +126,6 @@ export function buildDiachronicSeries(
           label: pinnedBook.label,
           year: pinnedBook.published_year,
           agreement: 1,
-          agreementCi: null,
           measurement: null,
         },
       ].sort(byYear);
@@ -193,26 +191,12 @@ export function buildChartModel(
   }
 
   const rowByBookId = new Map(chartData.map((row) => [row.bookId, row]));
-  const clamp = (v: number) => Math.min(yMax, Math.max(yMin, v));
 
   for (const s of series) {
     for (const p of s.points) {
       const row = rowByBookId.get(p.id);
       if (!row) continue;
-
-      const bounds = p.agreementCi
-        ? ([clamp(p.agreementCi[0]), clamp(p.agreementCi[1])] as [
-            number,
-            number,
-          ])
-        : undefined;
-      row.values[s.term] = {
-        agreement: p.agreement,
-        band: bounds,
-        ci: bounds
-          ? [p.agreement - bounds[0], bounds[1] - p.agreement]
-          : undefined,
-      };
+      row.values[s.term] = { agreement: p.agreement };
     }
   }
 

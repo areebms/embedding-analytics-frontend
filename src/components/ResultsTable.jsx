@@ -170,18 +170,12 @@ function MeasurementValue({ point }) {
   );
   if (!point.measurement) return value;
 
-  const { ci, occurrences, n_seeds } = point.measurement;
+  const { occurrences } = point.measurement;
   return (
     <Tooltip
       title={
         <Box sx={{ fontVariantNumeric: "tabular-nums" }}>
-          <div>
-            95% CI [{ci[0].toFixed(3)}, {ci[1].toFixed(3)}]
-          </div>
-          <div>
-            {occurrences.toLocaleString()} uses · {n_seeds} seed
-            {n_seeds === 1 ? "" : "s"}
-          </div>
+          {occurrences.toLocaleString()} uses
         </Box>
       }
     >

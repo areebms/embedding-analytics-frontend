@@ -137,17 +137,6 @@ function ExploreStep() {
             write what you want in plain English instead. The next step covers
             both.
           </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            Every score carries a confidence range, and what it varies depends on
-            how you are reading the corpus. With no book pinned, it is the spread
-            across the other books, so a wide band means the authors themselves
-            disagreed. Pin a book and it becomes the spread across an ensemble of
-            Word2Vec models trained on the same text from different starting
-            points, so a wide band means the models disagreed and the number is
-            not one to lean on. The two are not comparable in width — read each
-            for what it varies.
-          </Typography>
         </GuideCard>
 
         <GuideCard
@@ -160,7 +149,7 @@ function ExploreStep() {
             one term: your query, plus the terms used closest to it. Height shows
             how closely that term keeps the same company in each book — its{" "}
             <b>definitional agreement</b>, which is what the vertical axis
-            measures — and the shaded band around it is the confidence range.
+            measures.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             The vertical axis runs below zero as well as above it. Above zero, a

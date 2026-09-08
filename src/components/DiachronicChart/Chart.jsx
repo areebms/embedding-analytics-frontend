@@ -4,11 +4,9 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Line,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  ErrorBar,
   Tooltip,
   Label,
 } from "recharts";
@@ -82,11 +80,7 @@ export default function DiachronicChart({
       new Map(
         series.map((s) => [
           s.term,
-          {
-            agreement: (row) => row.values[s.term]?.agreement,
-            band: (row) => row.values[s.term]?.band,
-            ci: (row) => row.values[s.term]?.ci,
-          },
+          { agreement: (row) => row.values[s.term]?.agreement },
         ]),
       ),
     [series],
@@ -107,7 +101,6 @@ export default function DiachronicChart({
   const yTitle = refBook
     ? labels.agreement.pinned(refBook.label)
     : labels.agreement.label;
-  const querySeries = series.find((s) => s.isQuery);
   const activeSeries = series.find((s) => s.term === activeTerm);
 
   return (
@@ -173,20 +166,6 @@ export default function DiachronicChart({
             }
           />
 
-          {querySeries && (
-            <Area
-              type="linear"
-              dataKey={accessors.get(querySeries.term).band}
-              stroke="none"
-              fill={querySeries.color}
-              fillOpacity={0.15}
-              connectNulls={false}
-              isAnimationActive={false}
-              activeDot={false}
-              tooltipType="none"
-            />
-          )}
-
           {series.map((s) => {
             const revealed = s.isQuery || activeTerm === s.term;
             return (
@@ -210,18 +189,7 @@ export default function DiachronicChart({
                     onLeave={() => setActiveTerm(null)}
                   />
                 )}
-              >
-                {!s.isQuery && revealed && (
-                  <ErrorBar
-                    dataKey={accessors.get(s.term).ci}
-                    direction="y"
-                    width={4}
-                    strokeWidth={1}
-                    stroke={s.color}
-                    strokeOpacity={0.45}
-                  />
-                )}
-              </Line>
+              />
             );
           })}
 

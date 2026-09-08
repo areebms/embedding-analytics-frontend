@@ -6,7 +6,6 @@ export interface SeriesPoint {
   year: number;
   /** Definitional agreement: the API's `mean_local_similarity`, read. */
   agreement: number;
-  agreementCi: [number, number] | null;
   measurement: BookAgreement | null;
 }
 
@@ -37,8 +36,6 @@ export interface DiachronicSeries {
 
 interface TermValue {
   agreement: number;
-  band?: [number, number];
-  ci?: [number, number];
 }
 
 export interface ChartRow {
