@@ -13,7 +13,7 @@ import {
 import { buildDiachronicSeries, isDrawn } from "./DiachronicChart/series";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
-import { TERM_RANKINGS } from "../types/api";
+import { TERM_RANKINGS, RANKING_FIELD } from "../types/api";
 
 export default function ResultsTable({ payload, allBooks, ranking }) {
   const { series, roster } = useMemo(
@@ -142,7 +142,7 @@ function TermCell({ series, ranking }) {
     <Tooltip
       title={
         others
-          .map((r) => `${labels.columns[r].short} ${series.stats[r].toFixed(3)}`)
+          .map((r) => `${labels.columns[r].short} ${series.stats[RANKING_FIELD[r]].toFixed(3)}`)
           .join(" · ") +
         ` · measured across the ${n_books_in} ` +
         `book${n_books_in === 1 ? "" : "s"} that use it.`
@@ -157,7 +157,7 @@ function RankStatCell({ stats, stat }) {
   if (!stats) return <Dash />;
   return (
     <Typography variant="body2" sx={NUM}>
-      {stats[stat].toFixed(3)}
+      {stats[RANKING_FIELD[stat]].toFixed(3)}
     </Typography>
   );
 }

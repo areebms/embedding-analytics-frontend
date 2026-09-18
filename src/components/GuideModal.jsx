@@ -174,9 +174,9 @@ function ExploreStep() {
           </Typography>
           <Typography variant="body2" color="text.secondary">
             The "{labels.comparativeTerms.label}" dropdown decides which of
-            those companion terms get drawn. "{labels.comparativeTerms.rankings.stability}"
+            those companion terms get drawn. "{labels.comparativeTerms.rankings.persistent}"
             ranks them by how consistently each one sits near your query
-            across the whole corpus. "{labels.comparativeTerms.rankings.instability}"
+            across the whole corpus. "{labels.comparativeTerms.rankings.transient}"
             ranks the same terms by how much that closeness varies from book
             to book instead — the lines with something to say about change
             rather than about resemblance.

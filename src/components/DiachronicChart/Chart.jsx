@@ -198,6 +198,6 @@ export default function DiachronicChart({
 function emptyStateMessage({ term, hasError, payload }) {
   if (!term) return "Select a term to plot.";
   if (hasError) return "Nothing to plot.";
-  if (!payload?.books?.length) return "No books to compare.";
+  if (!payload?.book_stats?.length) return "No books to compare.";
   return `'${term}' could not be compared across books.`;
 }

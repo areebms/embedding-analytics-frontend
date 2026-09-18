@@ -18,7 +18,6 @@ import {
   useBooks,
   useSemanticDrift,
   useParseDescribeQuery,
-  MAX_DRIFT_BOOKS,
 } from "./api/queries";
 import { describeDriftError } from "./api/errors";
 import useUrlState from "./hooks/useUrlState";
@@ -53,14 +52,7 @@ export default function App() {
     return result;
   };
 
-  const displayedBooks = useMemo(
-    () => allBooks.slice(0, MAX_DRIFT_BOOKS),
-    [allBooks],
-  );
-  const displayedBookIds = useMemo(
-    () => displayedBooks.map((b) => b.id),
-    [displayedBooks],
-  );
+  const allBookIds = useMemo(() => allBooks.map((b) => b.id), [allBooks]);
 
   const refBook = useMemo(
     () => allBooks.find((b) => String(b.id) === selectedBookId) ?? null,
@@ -77,15 +69,17 @@ export default function App() {
     isLoading: driftLoading,
     error: driftError,
     queryLabel: driftQueryLabel,
-  } = useSemanticDrift(displayedBookIds, parsedExpression, pinnedBookId);
+  } = useSemanticDrift(allBookIds, parsedExpression, pinnedBookId);
 
   const missingBookIds = useMemo(() => {
     if (!driftPayload) return new Set();
-    const measured = new Set(driftPayload.expr.books.map((b) => b.book_id));
-    return new Set(
-      displayedBookIds.filter((id) => !measured.has(id) && id !== pinnedBookId),
+    const measured = new Set(
+      driftPayload.expr.book_similarities.map((b) => b.book_id),
     );
-  }, [displayedBookIds, driftPayload, pinnedBookId]);
+    return new Set(
+      allBookIds.filter((id) => !measured.has(id) && id !== pinnedBookId),
+    );
+  }, [allBookIds, driftPayload, pinnedBookId]);
 
   const driftAlert = useMemo(
     () =>
@@ -162,7 +156,7 @@ export default function App() {
             }}
           >
             <CompareBar
-              bookData={displayedBooks}
+              bookData={allBooks}
               missingBookIds={missingBookIds}
               selectedBookId={pinnedBookId}
               setSelectedBookId={setSelectedBookId}

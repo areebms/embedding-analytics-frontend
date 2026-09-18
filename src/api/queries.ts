@@ -15,8 +15,6 @@ import type {
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export const MAX_DRIFT_BOOKS = 16;
-
 interface RequestOptions extends RequestInit {
   reasons?: Reason[];
   statusKinds?: Record<number, ErrorKind>;

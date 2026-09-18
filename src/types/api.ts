@@ -13,49 +13,45 @@ export interface TermResponse {
   books: number[];
 }
 
-export const LOCAL_ANCHOR_FLOOR = 75;
-
-export const MIN_BOOKS_FOR_COMPARISON = 4;
-
 export interface SemanticDriftRequestBody {
   tree: OperationTree;
   book_ids: number[];
 }
 
-// One book's agreement reading. `n_books` is present only on the to-corpus
-// variant; nothing here branches on it, so it stays optional rather than
-// splitting the type -- a union of an interface with its own subtype narrows
-// to nothing without a discriminant.
-export interface BookAgreement {
+export interface BookSimilarity {
   book_id: number;
-  mean_local_similarity: number;
+  similarity: number;
   occurrences: number;
-  n_books?: number;
 }
 
-export interface ExprData {
+export interface ExprSimilarityData {
   expr: string;
   terms: string[];
-  books: BookAgreement[];
+  book_similarities: BookSimilarity[];
 }
 
-export interface TermData {
+export interface TermSimilarityData {
   term: string;
-  stability: number;
-  instability: number;
+  similarity_mean: number;
+  similarity_variance: number;
   n_books_in: number;
-  n_books_as_top50: number;
-  n_books_as_top100: number;
-  books: BookAgreement[];
+  n_books_local_in: number;
+  book_similarities: BookSimilarity[];
 }
 
-// Client-side ranking only -- both fields are present on every TermData the
-// backend returns, so which one sorts/draws the chart is a display choice,
-// not a request parameter.
-export const TERM_RANKINGS = ["stability", "instability"] as const;
-export type TermRanking = (typeof TERM_RANKINGS)[number];
-export const DEFAULT_TERM_RANKING: TermRanking = "stability";
+// Keys appear in shared `?sort=` links: don't rename them. When the backend
+// renames a field, change only the values.
+export const RANKING_FIELD = {
+  persistent: "similarity_mean",
+  transient: "similarity_variance",
+} as const;
+export type TermRanking = keyof typeof RANKING_FIELD;
+export type TermStatField = (typeof RANKING_FIELD)[TermRanking];
+export const TERM_RANKINGS = Object.keys(RANKING_FIELD) as TermRanking[];
+export const DEFAULT_TERM_RANKING: TermRanking = "persistent";
 
+// Only books the backend scored get a row. `missing_terms`: which of the
+// returned related terms this book never uses.
 export interface BookSummary {
   id: number;
   n_shared_terms: number;
@@ -63,9 +59,9 @@ export interface BookSummary {
 }
 
 export interface SemanticDriftResponse {
-  expr: ExprData;
-  comparative_terms: TermData[];
-  books: BookSummary[];
+  expr: ExprSimilarityData;
+  comparative_terms: TermSimilarityData[];
+  book_stats: BookSummary[];
 }
 
 export interface SubstitutionResponse {

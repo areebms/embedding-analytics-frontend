@@ -1,9 +1,8 @@
 import { seriesColor, QUERY_COLOR } from "./palette";
 import { generateLinearTicks } from "./layout";
-import { LOCAL_ANCHOR_FLOOR, DEFAULT_TERM_RANKING } from "../../types/api";
+import { DEFAULT_TERM_RANKING, RANKING_FIELD } from "../../types/api";
 import type {
   BookResponse,
-  BookSummary,
   TermRanking,
   SemanticDriftResponse,
 } from "../../types/api";
@@ -27,30 +26,30 @@ export function buildDiachronicSeries(
   pinnedBook: BookResponse | null = null,
   ranking: TermRanking = DEFAULT_TERM_RANKING,
 ): DiachronicSeries {
-  if (!payload?.books.length || !allBooks.length) {
+  if (!payload?.book_stats.length || !allBooks.length) {
     return { series: [], roster: [] };
   }
   const bookMap = new Map(allBooks.map((b) => [b.id, b]));
-  const summaryById = new Map(payload.books.map((s) => [s.id, s]));
+  const summaryById = new Map(payload.book_stats.map((s) => [s.id, s]));
 
-  const roster = payload.books
+  const roster = payload.book_stats
     .filter((summary) => bookMap.has(summary.id))
     .map((summary) => bookMap.get(summary.id)!)
     .sort(byPublishedYear);
 
   const ranked = [...payload.comparative_terms].sort(
-    (a, b) => b[ranking] - a[ranking],
+    (a, b) => b[RANKING_FIELD[ranking]] - a[RANKING_FIELD[ranking]],
   );
 
   const rankedColorCount = Math.min(ranked.length, CHART_TERM_LIMIT);
 
-  const rankedLines = ranked.map(({ term, books, ...stats }, i) => ({
+  const rankedLines = ranked.map(({ term, book_similarities, ...stats }, i) => ({
     term,
     isQuery: false,
     rank: i + 1,
     terms: [term],
     stats,
-    rows: books,
+    rows: book_similarities,
   }));
 
   const lines = [
@@ -61,7 +60,7 @@ export function buildDiachronicSeries(
       rank: 0,
       terms: payload.expr.terms,
       stats: null,
-      rows: payload.expr.books,
+      rows: payload.expr.book_similarities,
     },
   ];
 
@@ -82,7 +81,7 @@ export function buildDiachronicSeries(
       if (raw) {
         points.push({
           ...base,
-          agreement: raw.mean_local_similarity,
+          agreement: raw.similarity,
           measurement: raw,
         });
       } else {
@@ -92,7 +91,7 @@ export function buildDiachronicSeries(
         );
         gaps.push({
           id: book.id,
-          cause: gapCause(missingTerms, summary),
+          cause: gapCause(missingTerms),
           missingTerms,
         });
       }
@@ -141,13 +140,8 @@ export function buildDiachronicSeries(
   return { series: built, roster };
 }
 
-function gapCause(
-  missingTerms: string[],
-  summary: BookSummary | undefined,
-): GapCause {
+function gapCause(missingTerms: string[]): GapCause {
   if (missingTerms.length) return "absent";
-  if (summary && summary.n_shared_terms < LOCAL_ANCHOR_FLOOR)
-    return "too_few_anchors";
   return "unscored";
 }
 
