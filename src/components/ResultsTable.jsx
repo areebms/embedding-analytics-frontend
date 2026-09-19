@@ -10,7 +10,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { buildDiachronicSeries, isDrawn } from "./DiachronicChart/series";
+import { buildDiachronicSeries, isDrawn } from "./charts/series";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
 import { TERM_RANKINGS, RANKING_FIELD } from "../types/api";

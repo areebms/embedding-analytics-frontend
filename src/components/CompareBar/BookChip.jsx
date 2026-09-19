@@ -1,6 +1,6 @@
 import { Chip } from "@mui/material";
 import PushPinIcon from "@mui/icons-material/PushPin";
-import { QUERY_COLOR } from "../DiachronicChart/palette";
+import { QUERY_COLOR } from "../charts/palette";
 
 export default function BookChip({ label, active, selected, onSelect, clickable }) {
   return (

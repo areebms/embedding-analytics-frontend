@@ -1,17 +1,15 @@
 import { useMemo } from "react";
 import { Text, usePlotArea, useYAxisScale } from "recharts";
 
-import { INK } from "./palette";
+import { INK } from "../charts/palette";
 import { labels } from "../../content/labels";
-import { TooltipCard, TooltipTitle, TooltipRow } from "../chartTooltip";
+import { TooltipCard, TooltipTitle, TooltipRow } from "../charts/tooltip";
 import {
-  LABEL_LINE_H,
   LABEL_FONT_SIZE,
   TERM_LABEL_HALO,
-  labelLines,
-  stackLabels,
   termWeight,
-} from "./layout";
+} from "../charts/layout";
+import { LABEL_LINE_H, labelLines, stackLabels } from "./layout";
 
 export function SeriesDot({ cx, cy, value, color, r, onEnter, onLeave }) {
   if (cx == null || cy == null || value == null) return null;

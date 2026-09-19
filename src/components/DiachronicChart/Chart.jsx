@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -11,11 +11,9 @@ import {
   Label,
 } from "recharts";
 
-import ChartMessage, { ChartSpinner } from "./ChartMessage";
-import { INK } from "./palette";
-import { buildDiachronicSeries, buildChartModel, isDrawn } from "./series";
-import { SeriesDot, DotTooltip, SeriesLabels } from "./marks";
-import { labels } from "../../content/labels";
+import { ChartEmpty, ChartSpinner } from "../charts/ChartArea";
+import { INK } from "../charts/palette";
+import { buildDiachronicSeries, isDrawn } from "../charts/series";
 import {
   CHART_HEIGHT,
   CHART_MARGIN,
@@ -24,6 +22,11 @@ import {
   AXIS_LINE,
   TICK,
   NUMERIC_TICK,
+} from "../charts/layout";
+import { buildChartModel } from "./model";
+import { SeriesDot, DotTooltip, SeriesLabels } from "./marks";
+import { labels } from "../../content/labels";
+import {
   QUERY_DOT_R,
   NEIGHBOUR_DOT_R,
   QUERY_STROKE_W,
@@ -85,11 +88,7 @@ export default function DiachronicChart({
 
   if (!series.length) {
     return (
-      <ChartMessage height={CHART_HEIGHT}>
-        <Typography variant="body1" color="text.secondary" align="center">
-          {emptyStateMessage({ term, hasError, payload })}
-        </Typography>
-      </ChartMessage>
+      <ChartEmpty message={emptyStateMessage({ term, hasError, payload })} />
     );
   }
 

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 
-import { ChartSpinner } from "./ChartMessage";
+import { ChartSpinner } from "../charts/ChartArea";
 
 const Chart = lazy(() => import("./Chart"));
 
