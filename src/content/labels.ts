@@ -43,5 +43,9 @@ export const labels = {
     },
   } satisfies Record<TermRanking, { short: string; help: string }>,
 
+  diachronic: {
+    empty: (term: string) => `'${term}' could not be compared across books.`,
+  },
+
   booksGroup: "Definitional agreement, by book",
 };

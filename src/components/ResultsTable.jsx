@@ -10,7 +10,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { buildSeries, isDrawn } from "./charts/series";
+import { CHART_TERM_LIMIT, buildSeries } from "./charts/series";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
 import { TERM_RANKINGS, RANKING_FIELD } from "../types/api";
@@ -19,6 +19,13 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
   const { series, roster } = useMemo(
     () => buildSeries(payload, allBooks, ranking),
     [payload, allBooks, ranking],
+  );
+  const missingById = useMemo(
+    () =>
+      new Map(
+        (payload?.book_stats ?? []).map((b) => [b.id, b.missing_terms ?? []]),
+      ),
+    [payload],
   );
 
   if (!series.length) {
@@ -29,7 +36,9 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
     );
   }
 
-  const rows = series.filter(isDrawn).sort((a, b) => a.rank - b.rank);
+  const rows = series
+    .filter((s) => s.rank <= CHART_TERM_LIMIT)
+    .sort((a, b) => a.rank - b.rank);
 
   return (
     <TableContainer>
@@ -60,27 +69,27 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
         </TableHead>
         <TableBody>
           {rows.map((s) => {
-            const byBook = new Map(s.points.map((p) => [p.id, p]));
-            const gapByBook = new Map(s.gaps.map((g) => [g.id, g]));
+            const terms = s.isQuery ? payload.expr.terms : [s.term];
             return (
               <TableRow key={s.term} hover>
                 <TableCell sx={CELL}>
                   <TermCell series={s} ranking={ranking} />
                 </TableCell>
                 <TableCell align="right" sx={CELL}>
-                  <RankStatCell stats={s.stats} stat={ranking} />
+                  <RankStatCell stats={s.overall} stat={ranking} />
                 </TableCell>
-                {roster.map((b) => {
-                  const p = byBook.get(b.id);
-                  const gap = gapByBook.get(b.id);
+                {s.byText.map((text) => {
+                  const missing = missingById.get(text.id) ?? [];
                   return (
-                    <TableCell key={b.id} align="right" sx={CELL}>
-                      {p ? (
-                        <MeasurementValue point={p} />
-                      ) : gap ? (
-                        <GapText missingTerms={gap.missingTerms} />
+                    <TableCell key={text.id} align="right" sx={CELL}>
+                      {text.similarity !== undefined ? (
+                        <MeasurementValue point={text} />
                       ) : (
-                        <Dash />
+                        <GapText
+                          missingTerms={terms.filter((t) =>
+                            missing.includes(t),
+                          )}
+                        />
                       )}
                     </TableCell>
                   );
@@ -131,15 +140,15 @@ function TermCell({ series, ranking }) {
     </Box>
   );
 
-  if (!series.stats) return term;
+  if (!series.overall) return term;
 
-  const { n_books_in } = series.stats;
+  const { n_books_in } = series.overall;
   const others = TERM_RANKINGS.filter((r) => r !== ranking);
   return (
     <Tooltip
       title={
         others
-          .map((r) => `${labels.columns[r].short} ${series.stats[RANKING_FIELD[r]].toFixed(3)}`)
+          .map((r) => `${labels.columns[r].short} ${series.overall[RANKING_FIELD[r]].toFixed(3)}`)
           .join(" · ") +
         ` · measured across the ${n_books_in} ` +
         `book${n_books_in === 1 ? "" : "s"} that use it.`
@@ -164,7 +173,7 @@ function MeasurementValue({ point }) {
     <Tooltip
       title={
         <Box sx={{ fontVariantNumeric: "tabular-nums" }}>
-          {point.measurement.occurrences.toLocaleString()} uses
+          {point.occurrences.toLocaleString()} uses
         </Box>
       }
     >

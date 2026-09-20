@@ -12,6 +12,7 @@ import {
 import GitHubIcon from "@mui/icons-material/GitHub";
 import TopBar from "./components/TopBar";
 import CompareBar from "./components/CompareBar";
+import ChartArea from "./components/charts/ChartArea";
 import ResultsTable from "./components/ResultsTable";
 import DiachronicChart from "./components/DiachronicChart";
 import {
@@ -164,15 +165,20 @@ export default function App() {
 
             <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 3 }}>
               <Box sx={{ p: 3 }}>
-                <DiachronicChart
-                  payload={driftPayload}
-                  refBook={refBook}
-                  term={expression.trim()}
+                <ChartArea
                   isLoading={driftLoading}
+                  term={expression.trim()}
                   hasError={Boolean(driftAlert)}
-                  allBooks={allBooks}
-                  ranking={ranking}
-                />
+                  payload={driftPayload}
+                >
+                  <DiachronicChart
+                    payload={driftPayload}
+                    refBook={refBook}
+                    term={expression.trim()}
+                    allBooks={allBooks}
+                    ranking={ranking}
+                  />
+                </ChartArea>
               </Box>
             </Paper>
           </Box>

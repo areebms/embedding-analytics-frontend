@@ -9,17 +9,18 @@ export function buildChartModel(
   series: Series[],
   roster: BookResponse[],
 ): ChartModel {
-  const allPoints = series.flatMap((s) => s.points);
-  if (!allPoints.length || !roster.length) return EMPTY_MODEL;
+  const similarities = series
+    .flatMap((s) => s.byText)
+    .map((t) => t.similarity)
+    .filter((v) => v !== undefined);
+  if (!similarities.length || !roster.length) return EMPTY_MODEL;
 
   const chartData: ChartRow[] = roster.map((book) => ({
     year: book.published_year,
-    bookId: book.id,
     book: book.label,
     values: {},
   }));
 
-  const similarities = allPoints.map((d) => d.similarity);
   const years = chartData.map((r) => r.year);
   const yearMin = Math.min(...years);
   const yearMax = Math.max(...years);
@@ -34,21 +35,16 @@ export function buildChartModel(
     [yMin, yMax] = [mid - MIN_Y_SPAN / 2, mid + MIN_Y_SPAN / 2];
   }
 
-  const rowByBookId = new Map(chartData.map((row) => [row.bookId, row]));
-
   for (const s of series) {
-    for (const p of s.points) {
-      const row = rowByBookId.get(p.id);
-      if (!row) continue;
-      row.values[s.term] = { similarity: p.similarity };
-    }
+    s.byText.forEach(({ similarity }, i) => {
+      if (similarity !== undefined) chartData[i].values[s.term] = similarity;
+    });
   }
 
   return {
     chartData,
     xDomain: [yearMin, yearMax],
-    yMin,
-    yMax,
+    yDomain: [yMin, yMax],
     xTicks: generateYearTicks(yearMin, yearMax),
     yTicks: generateLinearTicks(yMin, yMax),
   };
@@ -57,8 +53,7 @@ export function buildChartModel(
 const EMPTY_MODEL: ChartModel = {
   chartData: [],
   xDomain: [0, 1],
-  yMin: 0,
-  yMax: 1,
+  yDomain: [0, 1],
   xTicks: [],
   yTicks: [],
 };

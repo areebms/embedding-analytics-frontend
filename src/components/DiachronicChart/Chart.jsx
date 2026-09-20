@@ -11,9 +11,9 @@ import {
   Label,
 } from "recharts";
 
-import { ChartEmpty, ChartSpinner } from "../charts/ChartArea";
+import { ChartEmpty } from "../charts/ChartArea";
 import { INK } from "../charts/palette";
-import { buildSeries, isDrawn } from "../charts/series";
+import { CHART_TERM_LIMIT, buildSeries } from "../charts/series";
 import {
   CHART_HEIGHT,
   CHART_MARGIN,
@@ -36,16 +36,7 @@ import {
 
 const formatTick = (v) => v.toFixed(2);
 
-const X_AXIS_TITLE = <Label value="Publication year" {...X_AXIS.title} />;
-
-export default function DiachronicChart({
-  payload,
-  term,
-  isLoading,
-  hasError,
-  allBooks,
-  ranking,
-}) {
+export default function DiachronicChart({ payload, term, allBooks, ranking }) {
   const [activeTerm, setActiveTerm] = useState(null);
 
   const { series: allSeries, roster } = useMemo(
@@ -53,9 +44,12 @@ export default function DiachronicChart({
     [payload, allBooks, ranking],
   );
 
-  const series = useMemo(() => allSeries.filter(isDrawn), [allSeries]);
+  const series = useMemo(
+    () => allSeries.filter((s) => s.rank <= CHART_TERM_LIMIT),
+    [allSeries],
+  );
 
-  const { chartData, xDomain, yMin, yMax, xTicks, yTicks } = useMemo(
+  const { chartData, xDomain, yDomain, xTicks, yTicks } = useMemo(
     () => buildChartModel(series, roster),
     [series, roster],
   );
@@ -65,17 +59,13 @@ export default function DiachronicChart({
   const accessors = useMemo(
     () =>
       new Map(
-        series.map((s) => [s.term, (row) => row.values[s.term]?.similarity]),
+        series.map((s) => [s.term, (row) => row.values[s.term]]),
       ),
     [series],
   );
 
-  if (isLoading) return <ChartSpinner />;
-
   if (!series.length) {
-    return (
-      <ChartEmpty message={emptyStateMessage({ term, hasError, payload })} />
-    );
+    return <ChartEmpty message={labels.diachronic.empty(term)} />;
   }
 
   const yTitle = labels.similarity.label;
@@ -101,11 +91,11 @@ export default function DiachronicChart({
             }}
             allowDecimals={false}
           >
-            {X_AXIS_TITLE}
+            <Label value="Publication year" {...X_AXIS.title} />
           </XAxis>
           <YAxis
             {...Y_AXIS.props}
-            domain={[yMin, yMax]}
+            domain={yDomain}
             padding={{ top: Y_AXIS_PAD, bottom: Y_AXIS_PAD }}
             ticks={yTicks}
             tickFormatter={formatTick}
@@ -136,7 +126,7 @@ export default function DiachronicChart({
                 stroke={s.color}
                 strokeWidth={s.isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}
                 strokeOpacity={revealed ? 1 : 0}
-                connectNulls={false}
+                connectNulls
                 isAnimationActive={false}
                 activeDot={false}
                 dot={(props) => (
@@ -161,11 +151,4 @@ export default function DiachronicChart({
       </ResponsiveContainer>
     </Box>
   );
-}
-
-function emptyStateMessage({ term, hasError, payload }) {
-  if (!term) return "Select a term to plot.";
-  if (hasError) return "Nothing to plot.";
-  if (!payload?.book_stats?.length) return "No books to compare.";
-  return `'${term}' could not be compared across books.`;
 }

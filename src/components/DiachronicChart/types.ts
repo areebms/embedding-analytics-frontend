@@ -1,19 +1,13 @@
-interface TermValue {
-  similarity: number;
-}
-
 export interface ChartRow {
   year: number;
-  bookId: number;
   book: string;
-  values: Record<string, TermValue>;
+  values: Record<string, number>;
 }
 
 export interface ChartModel {
   chartData: ChartRow[];
   xDomain: [number, number];
-  yMin: number;
-  yMax: number;
+  yDomain: [number, number];
   xTicks: number[];
   yTicks: number[];
 }
