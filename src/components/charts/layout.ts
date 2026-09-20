@@ -3,29 +3,57 @@ import { INK } from "./palette";
 
 export const CHART_HEIGHT = 400;
 export const CHART_MARGIN = { top: 12, right: 24, left: 8, bottom: 8 };
-export const Y_AXIS_WIDTH = 55;
-export const AXIS_LABEL_SIZE = 13;
-export const TICK_LABEL_SIZE = 11;
+const Y_AXIS_WIDTH = 55;
+const AXIS_LABEL_SIZE = 13;
+const TICK_LABEL_SIZE = 11;
 
-export const QUERY_TERM_WEIGHT = 700;
+const QUERY_TERM_WEIGHT = 700;
 export const NEIGHBOUR_TERM_WEIGHT = 500;
 
 export const termWeight = (isQuery: boolean): number =>
   isQuery ? QUERY_TERM_WEIGHT : NEIGHBOUR_TERM_WEIGHT;
 
-export const AXIS_TITLE_STYLE = {
+const AXIS_TITLE_STYLE = {
   textAnchor: "middle",
   fill: INK.title,
   fontWeight: 600,
   fontSize: AXIS_LABEL_SIZE,
 };
 
-export const AXIS_LINE = { stroke: INK.axis };
+const AXIS_LINE = { stroke: INK.axis };
 
-export const TICK = { fontSize: TICK_LABEL_SIZE, fill: INK.tick };
+const TICK = { fontSize: TICK_LABEL_SIZE, fill: INK.tick };
 
-// For axes whose ticks are decimals that must not jitter column to column.
-export const NUMERIC_TICK = { ...TICK, fontVariantNumeric: "tabular-nums" };
+// Every axis here is numeric, and tabular figures are what stop a tick label
+// changing width -- and so nudging its neighbours -- as the domain moves.
+const NUMERIC_TICK = { ...TICK, fontVariantNumeric: "tabular-nums" };
+
+// The chrome both charts' axes share. Bundled rather than spelled out twice so
+// the two cannot drift apart, and so everything above can stay private: spread
+// `props` onto the axis and `title` onto its `<Label>`.
+export const X_AXIS = {
+  props: {
+    type: "number",
+    niceTicks: "none",
+    height: 38,
+    tick: NUMERIC_TICK,
+    axisLine: AXIS_LINE,
+    tickLine: AXIS_LINE,
+  },
+  title: { position: "insideBottom", offset: -2, style: AXIS_TITLE_STYLE },
+} as const;
+
+export const Y_AXIS = {
+  props: {
+    type: "number",
+    niceTicks: "none",
+    width: Y_AXIS_WIDTH,
+    tick: NUMERIC_TICK,
+    axisLine: AXIS_LINE,
+    tickLine: AXIS_LINE,
+  },
+  title: { angle: -90, position: "insideLeft", style: AXIS_TITLE_STYLE },
+} as const;
 
 // The white outline that keeps a term legible where it crosses a grid line or a
 // mark. Drawn under the glyph via paintOrder, so it never eats the letterforms.

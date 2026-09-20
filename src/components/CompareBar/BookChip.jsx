@@ -13,7 +13,7 @@ export default function BookChip({ label, active, selected, onSelect, clickable 
       icon={selected ? <PushPinIcon /> : undefined}
       sx={{
         width: { xs: "auto", md: "100%" },
-        flexShrink: { xs: 0, md: "unset" },
+        flexShrink: 0,
         justifyContent: "flex-start",
         bgcolor: selected ? QUERY_COLOR : "transparent",
         color: selected ? "#fff" : active ? "text.primary" : "grey",

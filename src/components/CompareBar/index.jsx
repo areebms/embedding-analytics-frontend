@@ -1,6 +1,8 @@
 import { Stack, Typography } from "@mui/material";
 import BookChip from "./BookChip";
+import { CHART_HEIGHT } from "../charts/layout";
 
+export const RAIL_WIDTH = 160;
 
 export default function CompareBar({
   bookData,
@@ -11,7 +13,7 @@ export default function CompareBar({
   return (
     <Stack
       spacing={1}
-      sx={{ flexShrink: 0, width: { xs: "100%", md: "auto" }, minWidth: { md: 160 } }}
+      sx={{ flexShrink: 0, width: { xs: "100%", md: RAIL_WIDTH } }}
     >
       <Typography variant="body2" color="text.secondary">
         Click to compare:
@@ -19,7 +21,13 @@ export default function CompareBar({
       <Stack
         direction={{ xs: "row", md: "column" }}
         spacing={1}
-        sx={{ overflowX: { xs: "auto", md: "visible" }, pb: { xs: 0.5, md: 0 } }}
+        sx={{
+          overflowX: { xs: "auto", md: "hidden" },
+          overflowY: { xs: "hidden", md: "auto" },
+          maxHeight: { md: CHART_HEIGHT },
+          pb: { xs: 0.5, md: 0 },
+          pr: { md: 0.5 },
+        }}
       >
         {bookData.map((book) => {
           const selected = selectedBookId === book.id;

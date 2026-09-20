@@ -17,11 +17,8 @@ import { buildSeries, isDrawn } from "../charts/series";
 import {
   CHART_HEIGHT,
   CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  AXIS_TITLE_STYLE,
-  AXIS_LINE,
-  TICK,
-  NUMERIC_TICK,
+  X_AXIS,
+  Y_AXIS,
 } from "../charts/layout";
 import { buildChartModel } from "./model";
 import { SeriesDot, DotTooltip, SeriesLabels } from "./marks";
@@ -39,14 +36,7 @@ import {
 
 const formatTick = (v) => v.toFixed(2);
 
-const X_AXIS_TITLE = (
-  <Label
-    value="Publication year"
-    position="insideBottom"
-    offset={-2}
-    style={AXIS_TITLE_STYLE}
-  />
-);
+const X_AXIS_TITLE = <Label value="Publication year" {...X_AXIS.title} />;
 
 export default function DiachronicChart({
   payload,
@@ -101,41 +91,26 @@ export default function DiachronicChart({
             strokeDasharray="3 3"
           />
           <XAxis
-            type="number"
+            {...X_AXIS.props}
             dataKey="year"
             domain={xDomain}
             ticks={xTicks}
-            niceTicks="none"
             padding={{
               left: labelColumn + LABEL_GAP_X,
               right: X_AXIS_PAD_RIGHT,
             }}
             allowDecimals={false}
-            height={38}
-            tick={TICK}
-            axisLine={AXIS_LINE}
-            tickLine={AXIS_LINE}
           >
             {X_AXIS_TITLE}
           </XAxis>
           <YAxis
-            type="number"
+            {...Y_AXIS.props}
             domain={[yMin, yMax]}
             padding={{ top: Y_AXIS_PAD, bottom: Y_AXIS_PAD }}
             ticks={yTicks}
-            niceTicks="none"
             tickFormatter={formatTick}
-            width={Y_AXIS_WIDTH}
-            tick={NUMERIC_TICK}
-            axisLine={AXIS_LINE}
-            tickLine={AXIS_LINE}
           >
-            <Label
-              value={yTitle}
-              angle={-90}
-              position="insideLeft"
-              style={AXIS_TITLE_STYLE}
-            />
+            <Label value={yTitle} {...Y_AXIS.title} />
           </YAxis>
 
           <Tooltip
