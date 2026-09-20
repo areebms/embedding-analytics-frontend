@@ -13,7 +13,7 @@ import {
 
 import { ChartEmpty, ChartSpinner } from "../charts/ChartArea";
 import { INK } from "../charts/palette";
-import { buildDiachronicSeries, isDrawn } from "../charts/series";
+import { buildSeries, isDrawn } from "../charts/series";
 import {
   CHART_HEIGHT,
   CHART_MARGIN,
@@ -50,7 +50,6 @@ const X_AXIS_TITLE = (
 
 export default function DiachronicChart({
   payload,
-  refBook,
   term,
   isLoading,
   hasError,
@@ -60,8 +59,8 @@ export default function DiachronicChart({
   const [activeTerm, setActiveTerm] = useState(null);
 
   const { series: allSeries, roster } = useMemo(
-    () => buildDiachronicSeries(payload, allBooks, refBook, ranking),
-    [payload, allBooks, refBook, ranking],
+    () => buildSeries(payload, allBooks, ranking),
+    [payload, allBooks, ranking],
   );
 
   const series = useMemo(() => allSeries.filter(isDrawn), [allSeries]);
@@ -76,10 +75,7 @@ export default function DiachronicChart({
   const accessors = useMemo(
     () =>
       new Map(
-        series.map((s) => [
-          s.term,
-          { agreement: (row) => row.values[s.term]?.agreement },
-        ]),
+        series.map((s) => [s.term, (row) => row.values[s.term]?.similarity]),
       ),
     [series],
   );
@@ -92,9 +88,7 @@ export default function DiachronicChart({
     );
   }
 
-  const yTitle = refBook
-    ? labels.agreement.pinned(refBook.label)
-    : labels.agreement.label;
+  const yTitle = labels.similarity.label;
   const activeSeries = series.find((s) => s.term === activeTerm);
 
   return (
@@ -162,7 +156,7 @@ export default function DiachronicChart({
               <Line
                 key={s.term}
                 type="linear"
-                dataKey={accessors.get(s.term).agreement}
+                dataKey={accessors.get(s.term)}
                 name={s.term}
                 stroke={s.color}
                 strokeWidth={s.isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}

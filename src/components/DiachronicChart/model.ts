@@ -3,7 +3,7 @@ import type { BookResponse } from "../../types/api";
 import type { Series } from "../charts/types";
 import type { ChartModel, ChartRow } from "./types";
 
-const MIN_Y_SPAN = 0.04;
+const MIN_Y_SPAN = 1.00;
 
 export function buildChartModel(
   series: Series[],
@@ -19,20 +19,19 @@ export function buildChartModel(
     values: {},
   }));
 
-  const agreements = allPoints.map((d) => d.agreement);
+  const similarities = allPoints.map((d) => d.similarity);
   const years = chartData.map((r) => r.year);
   const yearMin = Math.min(...years);
   const yearMax = Math.max(...years);
-  const agreementMin = Math.min(...agreements);
-  const agreementMax = Math.max(...agreements);
+  const similarityMin = Math.min(...similarities);
+  const similarityMax = Math.max(...similarities);
 
-  let [yMin, yMax] = [Math.max(-1, agreementMin), Math.min(1, agreementMax)];
+  // Not clamped to [-1, 1]: an adjusted cosine is shifted by its book's
+  // baseline, so it can land just outside the cosine range.
+  let [yMin, yMax] = [similarityMin, similarityMax];
   if (yMax - yMin < MIN_Y_SPAN) {
     const mid = (yMin + yMax) / 2;
-    [yMin, yMax] = [
-      Math.max(-1, mid - MIN_Y_SPAN / 2),
-      Math.min(1, mid + MIN_Y_SPAN / 2),
-    ];
+    [yMin, yMax] = [mid - MIN_Y_SPAN / 2, mid + MIN_Y_SPAN / 2];
   }
 
   const rowByBookId = new Map(chartData.map((row) => [row.bookId, row]));
@@ -41,7 +40,7 @@ export function buildChartModel(
     for (const p of s.points) {
       const row = rowByBookId.get(p.id);
       if (!row) continue;
-      row.values[s.term] = { agreement: p.agreement };
+      row.values[s.term] = { similarity: p.similarity };
     }
   }
 

@@ -37,10 +37,10 @@ export function DotTooltip({ active, payload, activeTerm, color, measure }) {
   return (
     <TooltipCard>
       <TooltipTitle>
-        {labels.agreement.pointTitle(activeTerm, row.book)}
+        {labels.similarity.pointTitle(activeTerm, row.book)}
       </TooltipTitle>
       <TooltipRow marker={color} label={measure}>
-        {point.agreement.toFixed(3)}
+        {point.similarity.toFixed(3)}
       </TooltipRow>
     </TooltipCard>
   );
@@ -99,7 +99,7 @@ export function SeriesLabels({ series, width, onHover }) {
 function place(series, width, plot, yScale) {
   const labelled = [];
   for (const s of series) {
-    const y = yScale(s.points[0].agreement);
+    const y = yScale(s.points[0].similarity);
     if (typeof y !== "number" || Number.isNaN(y)) continue;
     const height = labelLines(s.term, s.isQuery, width) * LABEL_LINE_H;
     labelled.push({

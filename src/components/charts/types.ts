@@ -8,16 +8,13 @@ export interface SeriesPoint {
   id: number;
   label: string;
   year: number;
-  /** Definitional agreement: the API's `similarity`, read. */
-  agreement: number;
-  measurement: BookSimilarity | null;
+  similarity: number;
+  measurement: BookSimilarity;
 }
 
-export type GapCause = "absent" | "unscored";
-
+/** A roster book off this line, which only happens when it lacks the term. */
 export interface SeriesGap {
   id: number;
-  cause: GapCause;
   missingTerms: string[];
 }
 

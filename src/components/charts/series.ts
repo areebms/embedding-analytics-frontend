@@ -7,7 +7,6 @@ import type {
 } from "../../types/api";
 import type {
   DiachronicSeries,
-  GapCause,
   Series,
   SeriesGap,
   SeriesPoint,
@@ -17,25 +16,26 @@ export const CHART_TERM_LIMIT = 5;
 
 export const isDrawn = (s: Series) => s.isQuery || s.rank <= CHART_TERM_LIMIT;
 
-export function buildDiachronicSeries(
+export function buildSeries(
   payload: SemanticDriftResponse | null,
   allBooks: BookResponse[],
-  pinnedBook: BookResponse | null = null,
   ranking: TermRanking = DEFAULT_TERM_RANKING,
 ): DiachronicSeries {
-  if (!payload?.book_stats.length || !allBooks.length) {
+  if (!payload || !allBooks.length) {
     return { series: [], roster: [] };
   }
   const bookMap = new Map(allBooks.map((b) => [b.id, b]));
-  const summaryById = new Map(payload.book_stats.map((s) => [s.id, s]));
+  const missingById = new Map(
+    payload.book_stats.map((s) => [s.id, s.missing_terms ?? []]),
+  );
 
   const roster = payload.book_stats
-    .filter((summary) => bookMap.has(summary.id))
     .map((summary) => bookMap.get(summary.id)!)
     .sort(byPublishedYear);
 
+  const stat = RANKING_FIELD[ranking];
   const ranked = [...payload.comparative_terms].sort(
-    (a, b) => b[RANKING_FIELD[ranking]] - a[RANKING_FIELD[ranking]],
+    (a, b) => b[stat] - a[stat],
   );
 
   const rankedColorCount = Math.min(ranked.length, CHART_TERM_LIMIT);
@@ -44,17 +44,19 @@ export function buildDiachronicSeries(
     term,
     isQuery: false,
     rank: i + 1,
+    color: seriesColor(i + 1, rankedColorCount),
     terms: [term],
     stats,
     rows: book_similarities,
   }));
 
   const lines = [
-    ...rankedLines.slice().reverse(),
+    ...rankedLines.reverse(),
     {
       term: payload.expr.expr,
       isQuery: true,
       rank: 0,
+      color: QUERY_COLOR,
       terms: payload.expr.terms,
       stats: null,
       rows: payload.expr.book_similarities,
@@ -63,89 +65,37 @@ export function buildDiachronicSeries(
 
   const built: Series[] = [];
 
-  for (const line of lines) {
-    const measured = new Map(line.rows.map((r) => [r.book_id, r]));
+  for (const { terms, rows, ...line } of lines) {
+    const measured = new Map(rows.map((r) => [r.book_id, r]));
     const points: SeriesPoint[] = [];
     const gaps: SeriesGap[] = [];
 
     for (const book of roster) {
-      const base = {
-        id: book.id,
-        label: book.label,
-        year: book.published_year,
-      };
       const raw = measured.get(book.id);
       if (raw) {
         points.push({
-          ...base,
-          agreement: raw.similarity,
+          id: book.id,
+          label: book.label,
+          year: book.published_year,
+          similarity: raw.similarity,
           measurement: raw,
         });
       } else {
-        const summary = summaryById.get(book.id);
-        const missingTerms = line.terms.filter((t) =>
-          summary?.missing_terms?.includes(t),
-        );
+        const missing = missingById.get(book.id)!;
         gaps.push({
           id: book.id,
-          cause: gapCause(missingTerms),
-          missingTerms,
+          missingTerms: terms.filter((t) => missing.includes(t)),
         });
       }
     }
 
-    points.sort(byYear);
-
-    if (!points.length) {
-      continue;
-    }
-
-    built.push({
-      term: line.term,
-      isQuery: line.isQuery,
-      color: line.isQuery
-        ? QUERY_COLOR
-        : seriesColor(line.rank, rankedColorCount),
-      rank: line.rank,
-      stats: line.stats,
-      points,
-      gaps,
-    });
-  }
-
-  if (pinnedBook) {
-    for (const s of built) {
-      if (s.points.some((p) => p.id === pinnedBook.id)) continue;
-      s.points = [
-        ...s.points,
-        {
-          id: pinnedBook.id,
-          label: pinnedBook.label,
-          year: pinnedBook.published_year,
-          agreement: 1,
-          measurement: null,
-        },
-      ].sort(byYear);
-    }
-
-    if (!roster.some((b) => b.id === pinnedBook.id)) {
-      roster.push(pinnedBook);
-      roster.sort(byPublishedYear);
+    if (points.length) {
+      built.push({ ...line, points, gaps });
     }
   }
 
   return { series: built, roster };
 }
-
-function gapCause(missingTerms: string[]): GapCause {
-  if (missingTerms.length) return "absent";
-  return "unscored";
-}
-
-const byYear = (
-  a: { year: number; label: string },
-  b: { year: number; label: string },
-) => a.year - b.year || a.label.localeCompare(b.label);
 
 const byPublishedYear = (a: BookResponse, b: BookResponse) =>
   a.published_year - b.published_year || a.label.localeCompare(b.label);

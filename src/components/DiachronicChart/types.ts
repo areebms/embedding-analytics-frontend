@@ -1,5 +1,5 @@
 interface TermValue {
-  agreement: number;
+  similarity: number;
 }
 
 export interface ChartRow {

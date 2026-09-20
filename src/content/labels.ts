@@ -1,9 +1,10 @@
 import type { TermRanking } from "../types/api";
 
 export const labels = {
-  agreement: {
-    label: "Definitional agreement",
-    pinned: (bookLabel: string) => `Definitional agreement with ${bookLabel}`,
+  // Pinned or not, every point is the term's own adjusted cosine to the query
+  // in that book; a pin changes which books and terms appear, not the measure.
+  similarity: {
+    label: "Semantic similarity to query",
     pointTitle: (term: string, bookLabel: string) =>
       `Usage of ${term} in ${bookLabel}`,
   },
@@ -16,18 +17,10 @@ export const labels = {
     } satisfies Record<TermRanking, string>,
   },
 
-  gaps: {
-    absent: {
-      short: "not in text",
-      detail: (terms: string[]) =>
-        `This book never uses ${terms.map((t) => `"${t}"`).join(" or ")}.`,
-    },
-    unscored: {
-      short: "not measured",
-      detail: () =>
-        "This book has the vocabulary, but no comparison against it produced " +
-        "a score.",
-    },
+  gap: {
+    short: "not in text",
+    detail: (terms: string[]) =>
+      `This book never uses ${terms.map((t) => `"${t}"`).join(" or ")}.`,
   },
 
   // Indexed by ranking at two call sites in ResultsTable, so the `satisfies`
@@ -37,14 +30,16 @@ export const labels = {
     persistent: {
       short: "Persistence",
       help:
-        "How consistently this term sits near your query across the corpus. " +
-        "Higher values mean that this aspect of the definition is constant across the corpus.",
+        "Mean relative cosine similarity to your query across the books that " +
+        "use this term. Higher means it belongs to the core, invariant part of " +
+        "the query's definition.",
     },
     transient: {
       short: "Transience",
       help:
-        "How much that closeness varies from book to book. Higher means the " +
-        "books disagree about this aspect of the definition.",
+        "Variance of that relative cosine similarity from book to book. Higher " +
+        "means the term's closeness to the query shifts across the corpus: a " +
+        "semantic shift.",
     },
   } satisfies Record<TermRanking, { short: string; help: string }>,
 

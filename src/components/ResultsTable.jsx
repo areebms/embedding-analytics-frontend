@@ -10,14 +10,14 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { buildDiachronicSeries, isDrawn } from "./charts/series";
+import { buildSeries, isDrawn } from "./charts/series";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
 import { TERM_RANKINGS, RANKING_FIELD } from "../types/api";
 
 export default function ResultsTable({ payload, allBooks, ranking }) {
   const { series, roster } = useMemo(
-    () => buildDiachronicSeries(payload, allBooks, null, ranking),
+    () => buildSeries(payload, allBooks, ranking),
     [payload, allBooks, ranking],
   );
 
@@ -78,10 +78,7 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
                       {p ? (
                         <MeasurementValue point={p} />
                       ) : gap ? (
-                        <GapText
-                          cause={gap.cause}
-                          missingTerms={gap.missingTerms}
-                        />
+                        <GapText missingTerms={gap.missingTerms} />
                       ) : (
                         <Dash />
                       )}
@@ -163,23 +160,19 @@ function RankStatCell({ stats, stat }) {
 }
 
 function MeasurementValue({ point }) {
-  const value = (
-    <Typography variant="body2" sx={NUM}>
-      {point.agreement.toFixed(3)}
-    </Typography>
-  );
-  if (!point.measurement) return value;
-
-  const { occurrences } = point.measurement;
   return (
     <Tooltip
       title={
         <Box sx={{ fontVariantNumeric: "tabular-nums" }}>
-          {occurrences.toLocaleString()} uses
+          {point.measurement.occurrences.toLocaleString()} uses
         </Box>
       }
     >
-      <Box sx={{ cursor: "help", display: "inline-block" }}>{value}</Box>
+      <Box sx={{ cursor: "help", display: "inline-block" }}>
+        <Typography variant="body2" sx={NUM}>
+          {point.similarity.toFixed(3)}
+        </Typography>
+      </Box>
     </Tooltip>
   );
 }
@@ -197,8 +190,8 @@ function Hint({ title, children, ...props }) {
   );
 }
 
-function GapText({ cause, missingTerms }) {
-  const copy = labels.gaps[cause];
+function GapText({ missingTerms }) {
+  const copy = labels.gap;
   return (
     <Hint
       title={`${copy.short} — ${copy.detail(missingTerms)}`}
