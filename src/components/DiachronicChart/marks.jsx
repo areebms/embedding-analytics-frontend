@@ -10,9 +10,23 @@ import {
   TERM_LABEL_HALO,
   termWeight,
 } from "../charts/layout";
-import { LABEL_LINE_H, labelLines, stackLabels } from "./layout";
+import {
+  DOT_FADED_OPACITY,
+  LABEL_LINE_H,
+  labelLines,
+  stackLabels,
+} from "./layout";
 
-export function SeriesDot({ cx, cy, value, color, r, onEnter, onLeave }) {
+export function SeriesDot({
+  cx,
+  cy,
+  value,
+  color,
+  r,
+  faded,
+  onEnter,
+  onLeave,
+}) {
   if (cx == null || cy == null || value == null) return null;
   return (
     <circle
@@ -22,6 +36,7 @@ export function SeriesDot({ cx, cy, value, color, r, onEnter, onLeave }) {
       fill={color}
       stroke={INK.surface}
       strokeWidth={1}
+      opacity={faded ? DOT_FADED_OPACITY : 1}
       // The dot is filled, so it would catch the pointer anyway; saying so keeps
       // the hover from depending on that.
       style={{ pointerEvents: "all" }}

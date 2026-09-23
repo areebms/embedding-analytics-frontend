@@ -5,6 +5,7 @@ import type { LabelAnchor } from "./types";
 
 export const QUERY_DOT_R = 7.5;
 export const NEIGHBOUR_DOT_R = 6;
+export const DOT_FADED_OPACITY = 0.25;
 
 export const QUERY_STROKE_W = 3.25;
 export const NEIGHBOUR_STROKE_W = 1;

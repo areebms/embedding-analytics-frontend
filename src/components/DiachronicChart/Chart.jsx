@@ -130,6 +130,7 @@ export default function DiachronicChart({ payload, term, allBooks }) {
                     {...props}
                     color={color}
                     r={isQuery(s) ? QUERY_DOT_R : NEIGHBOUR_DOT_R}
+                    faded={!emphasised}
                     onEnter={() => setActiveTerm(s.term)}
                     onLeave={() => setActiveTerm(null)}
                   />
