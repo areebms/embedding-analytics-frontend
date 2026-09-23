@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Table,
   TableHead,
@@ -28,6 +28,7 @@ export default function ResultsTable({ payload, allBooks }) {
       ),
     [payload],
   );
+  const { cells, offsets } = useFrozenOffsets(series.length > 0);
 
   if (!series.length) {
     return (
@@ -38,31 +39,50 @@ export default function ResultsTable({ payload, allBooks }) {
   }
 
   const rows = [...series].sort(byTypeThenRank);
+  const frozen = (i) => frozenCell(offsets[i], i === FROZEN_COUNT - 1);
+  const headRef = (i) => (el) => {
+    cells.current[i] = el;
+  };
 
   return (
     <TableContainer>
-      <Table size="small" sx={{ minWidth: 650 }}>
+      <Table size="small" sx={{ minWidth: 650, borderCollapse: "separate" }}>
         <TableHead>
           <TableRow>
-            <TableCell rowSpan={2} sx={{ ...HEAD, ...CELL }}>
+            <TableCell
+              ref={headRef(0)}
+              rowSpan={2}
+              sx={[HEAD, CELL, frozen(0)]}
+            >
               Term
             </TableCell>
-            {TERM_TYPES.map((r) => (
+            {TERM_TYPES.map((r, i) => (
               <TableCell
                 key={r}
+                ref={headRef(i + 1)}
                 rowSpan={2}
                 align="right"
-                sx={{ ...HEAD, ...CELL }}
+                sx={[
+                  HEAD,
+                  CELL,
+                  NOWRAP,
+                  frozen(i + 1),
+                  { color: TERM_TYPE_COLOR[r] },
+                ]}
               >
                 <HelpLabel {...labels.columns[r]} />
               </TableCell>
             ))}
-            <TableCell
-              colSpan={roster.length}
-              align="center"
-              sx={{ ...HEAD, ...CELL }}
-            >
-              {labels.booksGroup}
+            <TableCell colSpan={roster.length} sx={[HEAD, CELL]}>
+              <Box
+                component="span"
+                sx={{
+                  position: { sm: "sticky" },
+                  left: offsets[FROZEN_COUNT] + GROUP_LABEL_INSET,
+                }}
+              >
+                {labels.booksGroup}
+              </Box>
             </TableCell>
           </TableRow>
           <TableRow>
@@ -78,11 +98,11 @@ export default function ResultsTable({ payload, allBooks }) {
             const terms = isQuery(s) ? payload.expr.terms : [s.term];
             return (
               <TableRow key={s.term} hover>
-                <TableCell sx={CELL}>
+                <TableCell sx={[CELL, frozen(0)]}>
                   <TermCell series={s} />
                 </TableCell>
-                {TERM_TYPES.map((r) => (
-                  <TableCell key={r} align="right" sx={CELL}>
+                {TERM_TYPES.map((r, i) => (
+                  <TableCell key={r} align="right" sx={[CELL, frozen(i + 1)]}>
                     <StatCell overall={s.overall} stat={r} />
                   </TableCell>
                 ))}
@@ -116,6 +136,39 @@ const byTypeThenRank = (a, b) =>
   isQuery(b) - isQuery(a) ||
   TERM_TYPES.indexOf(a.type) - TERM_TYPES.indexOf(b.type) ||
   a.rank - b.rank;
+
+const FROZEN_COUNT = 1 + TERM_TYPES.length;
+const GROUP_LABEL_INSET = 16;
+
+function useFrozenOffsets(hasTable) {
+  const cells = useRef([]);
+  const [offsets, setOffsets] = useState(() => Array(FROZEN_COUNT + 1).fill(0));
+  useLayoutEffect(() => {
+    if (!hasTable) return;
+    const measure = () => {
+      let x = 0;
+      setOffsets([
+        0,
+        ...cells.current.map((c) => (x += c.getBoundingClientRect().width)),
+      ]);
+    };
+    const observer = new ResizeObserver(measure);
+    cells.current.forEach((c) => observer.observe(c));
+    return () => observer.disconnect();
+  }, [hasTable]);
+  return { cells, offsets };
+}
+
+const frozenCell = (left, isLast) => (theme) => ({
+  position: { sm: "sticky" },
+  left,
+  zIndex: 1,
+  bgcolor: "background.paper",
+  ".MuiTableRow-hover:hover > &": {
+    backgroundImage: `linear-gradient(${theme.palette.action.hover}, ${theme.palette.action.hover})`,
+  },
+  ...(isLast && { borderRight: `1px solid ${theme.palette.divider}` }),
+});
 
 const SWATCH_MIN_H = 2;
 
@@ -152,11 +205,8 @@ function TermCell({ series }) {
 
   if (!series.overall) return term;
 
-  const { n_books_in } = series.overall;
   return (
-    <Tooltip
-      title={`Measured in ${n_books_in} book${n_books_in === 1 ? "" : "s"}`}
-    >
+    <Tooltip title={labels.scatter.pointBooks(series.overall.n_books_in)}>
       <Box sx={{ cursor: "help", display: "inline-block" }}>{term}</Box>
     </Tooltip>
   );
@@ -189,9 +239,6 @@ function MeasurementValue({ point }) {
   );
 }
 
-// The dotted underline is the only thing marking a cell as hoverable, so it
-// and the tooltip stay in one place -- a column header and an empty cell are
-// both making the same promise to the reader.
 function Hint({ title, children, ...props }) {
   return (
     <Tooltip title={title}>
@@ -228,4 +275,5 @@ const DASH = "\u2014";
 const HELP = { cursor: "help", borderBottom: "1px dotted currentColor" };
 const HEAD = { fontWeight: 700 };
 const NUM = { fontVariantNumeric: "tabular-nums" };
+const NOWRAP = { whiteSpace: "nowrap" };
 const CELL = { py: 0.5 };
