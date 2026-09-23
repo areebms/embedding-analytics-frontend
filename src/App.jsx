@@ -8,29 +8,45 @@ import {
   CssBaseline,
   ThemeProvider,
   IconButton,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import TopBar from "./components/TopBar";
-import CompareBar from "./components/CompareBar";
+import CompareBar, { RAIL_WIDTH } from "./components/CompareBar";
 import ChartArea from "./components/charts/ChartArea";
 import ResultsTable from "./components/ResultsTable";
 import DiachronicChart from "./components/DiachronicChart";
+import TermOverviewChart from "./components/OverviewChart";
 import {
   useBooks,
   useSemanticDrift,
   useParseDescribeQuery,
 } from "./api/queries";
 import { describeDriftError } from "./api/errors";
-import useUrlState from "./hooks/useUrlState";
+import useUrlState, { CHART_TABS } from "./hooks/useUrlState";
 import { parseExpression } from "./utils/vectorExpressionParser";
+import { labels } from "./content/labels";
 import { theme } from "./theme";
 
 const GuideModal = lazy(() => import("./components/GuideModal"));
+
+const DIACHRONIC_TAB = "diachronic";
+const tabId = (tab) => `chart-tab-${tab}`;
+const CHART_PANEL_ID = "chart-panel";
+
+const PANEL_GAP = 16;
+const RAIL_LESS_CHART_SX = {
+  maxWidth: { md: `calc(100% - ${RAIL_WIDTH + PANEL_GAP}px)` },
+  mx: { md: "auto" },
+};
 
 export default function App() {
   const {
     expression,
     setExpression,
+    chartTab,
+    setChartTab,
     selectedBookId,
     setSelectedBookId,
   } = useUrlState();
@@ -72,11 +88,13 @@ export default function App() {
 
   const missingBookIds = useMemo(() => {
     if (!driftPayload) return new Set();
-    const measured = new Set(
+    const returnedBookIds = new Set(
       driftPayload.expr.book_similarities.map((b) => b.book_id),
     );
     return new Set(
-      allBookIds.filter((id) => !measured.has(id) && id !== pinnedBookId),
+      allBookIds.filter(
+        (id) => !returnedBookIds.has(id) && id !== pinnedBookId,
+      ),
     );
   }, [allBookIds, driftPayload, pinnedBookId]);
 
@@ -93,9 +111,12 @@ export default function App() {
   );
 
   const expressionLabel = driftQueryLabel || "...";
-  const heading = refBook
-    ? `Comparing to the definition of '${expressionLabel}' in ${refBook.label}`
-    : `How much do the authors agree on the corpus definition of '${expressionLabel}'?`;
+  const heading =
+    chartTab !== DIACHRONIC_TAB
+      ? `Consistent and contested related terms to '${expressionLabel}'`
+      : refBook
+        ? `Adjusted similarity to '${expressionLabel}' in ${refBook.label} by text`
+        : `Adjusted mean similarity to '${expressionLabel}' by text`;
 
   return (
     <ThemeProvider theme={theme}>
@@ -117,8 +138,33 @@ export default function App() {
             </Alert>
           )}
 
-          <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Paper elevation={0} sx={{ borderRadius: 3, mb: 2 }}>
+            <Tabs
+              value={chartTab}
+              onChange={(_, value) => setChartTab(value)}
+              aria-label="Chart view"
+              sx={{ px: 3, pt: 1, borderBottom: 1, borderColor: "divider" }}
+            >
+              {CHART_TABS.map((tab) => (
+                <Tab
+                  key={tab}
+                  label={labels.chartTabs[tab]}
+                  value={tab}
+                  id={tabId(tab)}
+                  aria-controls={CHART_PANEL_ID}
+                />
+              ))}
+            </Tabs>
+
+            <Box
+              sx={{
+                px: 3,
+                pt: 3,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 {heading}
               </Typography>
@@ -141,42 +187,53 @@ export default function App() {
                 Table &rarr;
               </Typography>
             </Box>
-          </Box>
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 2,
-              alignItems: { xs: "stretch", md: "flex-start" },
-              mb: 2,
-            }}
-          >
-            <CompareBar
-              bookData={allBooks}
-              missingBookIds={missingBookIds}
-              selectedBookId={pinnedBookId}
-              setSelectedBookId={setSelectedBookId}
-            />
+            <Box
+              role="tabpanel"
+              id={CHART_PANEL_ID}
+              aria-labelledby={tabId(chartTab)}
+              sx={{
+                p: 3,
+                pt: 2,
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                gap: `${PANEL_GAP}px`,
+                alignItems: { xs: "stretch", md: "flex-start" },
+              }}
+            >
+              {chartTab === DIACHRONIC_TAB && (
+                <CompareBar
+                  bookData={allBooks}
+                  missingBookIds={missingBookIds}
+                  selectedBookId={pinnedBookId}
+                  setSelectedBookId={setSelectedBookId}
+                />
+              )}
 
-            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 3 }}>
-              <Box sx={{ p: 3 }}>
-                <ChartArea
-                  isLoading={driftLoading}
-                  term={expression.trim()}
-                  hasError={Boolean(driftAlert)}
-                  payload={driftPayload}
-                >
+              <ChartArea
+                isLoading={driftLoading}
+                term={expression.trim()}
+                hasError={Boolean(driftAlert)}
+                payload={driftPayload}
+                sx={
+                  chartTab !== DIACHRONIC_TAB ? RAIL_LESS_CHART_SX : undefined
+                }
+              >
+                {chartTab === DIACHRONIC_TAB ? (
                   <DiachronicChart
                     payload={driftPayload}
-                    refBook={refBook}
                     term={expression.trim()}
                     allBooks={allBooks}
                   />
-                </ChartArea>
-              </Box>
-            </Paper>
-          </Box>
+                ) : (
+                  <TermOverviewChart
+                    payload={driftPayload}
+                    allBooks={allBooks}
+                  />
+                )}
+              </ChartArea>
+            </Box>
+          </Paper>
 
           <Paper
             id="results-table"

@@ -9,6 +9,20 @@ import {
 const DEFAULT_EXPRESSION = "market";
 const VIEW = "overview";
 
+export const CHART_TABS = ["scatter", "diachronic"] as const;
+export type ChartTab = (typeof CHART_TABS)[number];
+const CHART_TAB_PARAM = "chart";
+
+function toToken<T extends string>(
+  tokens: readonly T[],
+  value: string | null,
+  fallback: T,
+): T {
+  return (tokens as readonly string[]).includes(value ?? "")
+    ? (value as T)
+    : fallback;
+}
+
 export default function useUrlState() {
   const [params, setParams] = useSearchParams();
   const { bookId } = useParams();
@@ -36,6 +50,16 @@ export default function useUrlState() {
     [setParam],
   );
 
+  const chartTab = toToken(
+    CHART_TABS,
+    params.get(CHART_TAB_PARAM),
+    CHART_TABS[0],
+  );
+  const setChartTab = useCallback(
+    (value: ChartTab) => setParam(CHART_TAB_PARAM, value, CHART_TABS[0]),
+    [setParam],
+  );
+
   const selectedBookId = bookId ?? null;
 
   const setSelectedBookId = useCallback(
@@ -54,6 +78,8 @@ export default function useUrlState() {
   return {
     expression,
     setExpression,
+    chartTab,
+    setChartTab,
     selectedBookId,
     setSelectedBookId,
   };

@@ -1,4 +1,5 @@
 import type { TermType } from "../types/api";
+import type { ChartTab } from "../hooks/useUrlState";
 
 export const labels = {
   // Pinned or not, every point is the term's own adjusted cosine to the query
@@ -8,6 +9,11 @@ export const labels = {
     pointTitle: (term: string, bookLabel: string) =>
       `Usage of ${term} in ${bookLabel}`,
   },
+
+  chartTabs: {
+    diachronic: "By Text",
+    scatter: "Overall",
+  } satisfies Record<ChartTab, string>,
 
   comparativeTerms: {
     types: {
@@ -41,5 +47,14 @@ export const labels = {
     empty: (term: string) => `'${term}' could not be compared across books.`,
   },
 
-  booksGroup: "Definitional agreement, by book",
+  scatter: {
+    empty: "No related terms to plot.",
+    pointBooks: (n: number) => `Measured in ${n} book${n === 1 ? "" : "s"}`,
+    axes: {
+      consistent: "Consistency (adjusted cosine similarity mean)",
+      contested: "Contestation (adjusted cosine similarity std)",
+    } satisfies Record<TermType, string>,
+  },
+
+  booksGroup: "By Text",
 };
