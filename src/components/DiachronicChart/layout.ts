@@ -1,4 +1,6 @@
 import { measureLabel } from "../charts/layout";
+import { isQuery } from "../charts/series";
+import type { Series } from "../charts/types";
 import type { LabelAnchor } from "./types";
 
 export const QUERY_DOT_R = 7.5;
@@ -19,14 +21,15 @@ const LABEL_COLUMN_MAX = 132;
 const LABEL_GAP_Y_TIGHT = 2;
 
 export function labelColumnWidth(
-  series: { term: string; isQuery: boolean }[],
+  series: Pick<Series, "term" | "type">[],
 ): number {
   let widest = 0;
   for (const s of series) {
+    const query = isQuery(s);
     const unbreakable = Math.max(
-      ...s.term.split(/\s+/).map((word) => measureLabel(word, s.isQuery)),
+      ...s.term.split(/\s+/).map((word) => measureLabel(word, query)),
     );
-    const whole = Math.min(measureLabel(s.term, s.isQuery), LABEL_COLUMN_MAX);
+    const whole = Math.min(measureLabel(s.term, query), LABEL_COLUMN_MAX);
     widest = Math.max(widest, unbreakable, whole);
   }
   return widest + LABEL_PAD;
@@ -34,14 +37,14 @@ export function labelColumnWidth(
 
 export function labelLines(
   term: string,
-  isQuery: boolean,
+  query: boolean,
   width: number,
 ): number {
-  const space = measureLabel(" ", isQuery);
+  const space = measureLabel(" ", query);
   let lines = 1;
   let filled = 0;
   for (const word of term.split(/\s+/)) {
-    const w = measureLabel(word, isQuery);
+    const w = measureLabel(word, query);
     if (filled === 0) {
       filled = w;
     } else if (filled + space + w <= width) {

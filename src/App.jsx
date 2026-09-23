@@ -31,8 +31,6 @@ export default function App() {
   const {
     expression,
     setExpression,
-    ranking,
-    setRanking,
     selectedBookId,
     setSelectedBookId,
   } = useUrlState();
@@ -107,8 +105,6 @@ export default function App() {
         <TopBar
           expression={expression}
           onExpressionChange={setExpression}
-          ranking={ranking}
-          onRankingChange={setRanking}
           onDescribeSubmit={handleDescribeSubmit}
           describeSubmitting={describeMutation.isPending}
           onHelpClick={() => setGuideOpen(true)}
@@ -176,7 +172,6 @@ export default function App() {
                     refBook={refBook}
                     term={expression.trim()}
                     allBooks={allBooks}
-                    ranking={ranking}
                   />
                 </ChartArea>
               </Box>
@@ -188,11 +183,7 @@ export default function App() {
             elevation={0}
             sx={{ p: 3, borderRadius: 3 }}
           >
-            <ResultsTable
-              payload={driftPayload}
-              allBooks={allBooks}
-              ranking={ranking}
-            />
+            <ResultsTable payload={driftPayload} allBooks={allBooks} />
           </Paper>
         </Container>
 

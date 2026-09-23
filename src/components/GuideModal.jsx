@@ -20,7 +20,6 @@ import DifferenceIcon from "@mui/icons-material/Difference";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { labels } from "../content/labels";
 
 function ExpressionChip({ label }) {
   return (
@@ -171,15 +170,6 @@ function ExploreStep() {
             that author. With nothing pinned, each book is instead compared
             against all the others, showing how far it agrees with the corpus as
             a whole.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            The "{labels.comparativeTerms.label}" dropdown decides which of
-            those companion terms get drawn. "{labels.comparativeTerms.rankings.persistent}"
-            ranks them by how consistently each one sits near your query
-            across the whole corpus. "{labels.comparativeTerms.rankings.transient}"
-            ranks the same terms by how much that closeness varies from book
-            to book instead — the lines with something to say about change
-            rather than about resemblance.
           </Typography>
         </GuideCard>
       </Stack>

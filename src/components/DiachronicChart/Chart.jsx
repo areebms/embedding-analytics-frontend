@@ -12,8 +12,8 @@ import {
 } from "recharts";
 
 import { ChartEmpty } from "../charts/ChartArea";
-import { INK } from "../charts/palette";
-import { CHART_TERM_LIMIT, buildSeries } from "../charts/series";
+import { INK, TERM_TYPE_COLOR } from "../charts/palette";
+import { buildSeries, isQuery } from "../charts/series";
 import {
   CHART_HEIGHT,
   CHART_MARGIN,
@@ -36,17 +36,12 @@ import {
 
 const formatTick = (v) => v.toFixed(2);
 
-export default function DiachronicChart({ payload, term, allBooks, ranking }) {
+export default function DiachronicChart({ payload, term, allBooks }) {
   const [activeTerm, setActiveTerm] = useState(null);
 
-  const { series: allSeries, roster } = useMemo(
-    () => buildSeries(payload, allBooks, ranking),
-    [payload, allBooks, ranking],
-  );
-
-  const series = useMemo(
-    () => allSeries.filter((s) => s.rank <= CHART_TERM_LIMIT),
-    [allSeries],
+  const { series, roster } = useMemo(
+    () => buildSeries(payload, allBooks),
+    [payload, allBooks],
   );
 
   const { chartData, xDomain, yDomain, xTicks, yTicks } = useMemo(
@@ -109,31 +104,32 @@ export default function DiachronicChart({ payload, term, allBooks, ranking }) {
             content={
               <DotTooltip
                 activeTerm={activeTerm}
-                color={activeSeries?.color}
+                color={activeSeries && TERM_TYPE_COLOR[activeSeries.type]}
                 measure={yTitle}
               />
             }
           />
 
           {series.map((s) => {
-            const revealed = s.isQuery || activeTerm === s.term;
+            const emphasised = isQuery(s) || activeTerm === s.term;
+            const color = TERM_TYPE_COLOR[s.type];
             return (
               <Line
                 key={s.term}
                 type="linear"
                 dataKey={accessors.get(s.term)}
                 name={s.term}
-                stroke={s.color}
-                strokeWidth={s.isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}
-                strokeOpacity={revealed ? 1 : 0}
+                stroke={color}
+                strokeWidth={isQuery(s) ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}
+                strokeOpacity={emphasised ? 1 : 0}
                 connectNulls
                 isAnimationActive={false}
                 activeDot={false}
                 dot={(props) => (
                   <SeriesDot
                     {...props}
-                    color={s.color}
-                    r={s.isQuery ? QUERY_DOT_R : NEIGHBOUR_DOT_R}
+                    color={color}
+                    r={isQuery(s) ? QUERY_DOT_R : NEIGHBOUR_DOT_R}
                     onEnter={() => setActiveTerm(s.term)}
                     onLeave={() => setActiveTerm(null)}
                   />

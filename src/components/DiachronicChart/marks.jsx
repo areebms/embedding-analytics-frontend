@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Text, usePlotArea, useYAxisScale } from "recharts";
 
-import { INK } from "../charts/palette";
+import { INK, TERM_TYPE_COLOR } from "../charts/palette";
+import { isQuery } from "../charts/series";
 import { labels } from "../../content/labels";
 import { TooltipCard, TooltipTitle, TooltipRow } from "../charts/tooltip";
 import {
@@ -82,8 +83,8 @@ export function SeriesLabels({ series, width, onHover }) {
               verticalAnchor="start"
               width={width}
               fontSize={LABEL_FONT_SIZE}
-              fontWeight={termWeight(s.isQuery)}
-              fill={s.color}
+              fontWeight={termWeight(isQuery(s))}
+              fill={TERM_TYPE_COLOR[s.type]}
               {...TERM_LABEL_HALO}
               pointerEvents="none"
             >
@@ -103,7 +104,7 @@ function place(series, width, plot, yScale) {
     if (!first) continue;
     const y = yScale(first.similarity);
     if (typeof y !== "number" || Number.isNaN(y)) continue;
-    const height = labelLines(s.term, s.isQuery, width) * LABEL_LINE_H;
+    const height = labelLines(s.term, isQuery(s), width) * LABEL_LINE_H;
     labelled.push({
       series: s,
       height,

@@ -33,22 +33,19 @@ export interface ExprSimilarityData {
 export interface TermSimilarityData {
   term: string;
   similarity_mean: number;
-  similarity_variance: number;
+  similarity_std: number;
   n_books_in: number;
-  n_books_local_in: number;
   book_similarities: BookSimilarity[];
 }
 
-// Keys appear in shared `?sort=` links: don't rename them. When the backend
-// renames a field, change only the values.
-export const RANKING_FIELD = {
-  persistent: "similarity_mean",
-  transient: "similarity_variance",
+// Keys are the UI's term types; values are the backend's wire names.
+export const TERM_TYPE_STAT = {
+  consistent: "similarity_mean",
+  contested: "similarity_std",
 } as const;
-export type TermRanking = keyof typeof RANKING_FIELD;
-export type TermStatField = (typeof RANKING_FIELD)[TermRanking];
-export const TERM_RANKINGS = Object.keys(RANKING_FIELD) as TermRanking[];
-export const DEFAULT_TERM_RANKING: TermRanking = "persistent";
+export type TermType = keyof typeof TERM_TYPE_STAT;
+export type TermStatField = (typeof TERM_TYPE_STAT)[TermType];
+export const TERM_TYPES = Object.keys(TERM_TYPE_STAT) as TermType[];
 
 // Only books the backend scored get a row. `missing_terms`: which of the
 // returned related terms this book never uses.
@@ -58,11 +55,18 @@ export interface BookSummary {
   missing_terms?: string[];
 }
 
+// Each list is already ranked by the backend, best first.
 export interface SemanticDriftResponse {
   expr: ExprSimilarityData;
-  comparative_terms: TermSimilarityData[];
+  top_mean: TermSimilarityData[];
+  top_std: TermSimilarityData[];
   book_stats: BookSummary[];
 }
+
+export const TERM_TYPE_LIST = {
+  consistent: "top_mean",
+  contested: "top_std",
+} as const satisfies Record<TermType, keyof SemanticDriftResponse>;
 
 export interface SubstitutionResponse {
   original: string;

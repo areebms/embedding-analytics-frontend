@@ -10,15 +10,16 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { CHART_TERM_LIMIT, buildSeries } from "./charts/series";
+import { buildSeries, isQuery } from "./charts/series";
+import { TERM_TYPE_COLOR } from "./charts/palette";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
-import { TERM_RANKINGS, RANKING_FIELD } from "../types/api";
+import { TERM_TYPES, TERM_TYPE_STAT } from "../types/api";
 
-export default function ResultsTable({ payload, allBooks, ranking }) {
+export default function ResultsTable({ payload, allBooks }) {
   const { series, roster } = useMemo(
-    () => buildSeries(payload, allBooks, ranking),
-    [payload, allBooks, ranking],
+    () => buildSeries(payload, allBooks),
+    [payload, allBooks],
   );
   const missingById = useMemo(
     () =>
@@ -36,9 +37,7 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
     );
   }
 
-  const rows = series
-    .filter((s) => s.rank <= CHART_TERM_LIMIT)
-    .sort((a, b) => a.rank - b.rank);
+  const rows = [...series].sort(byTypeThenRank);
 
   return (
     <TableContainer>
@@ -46,11 +45,18 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
         <TableHead>
           <TableRow>
             <TableCell rowSpan={2} sx={{ ...HEAD, ...CELL }}>
-              Expression
+              Term
             </TableCell>
-            <TableCell rowSpan={2} align="right" sx={{ ...HEAD, ...CELL }}>
-              <HelpLabel {...labels.columns[ranking]} />
-            </TableCell>
+            {TERM_TYPES.map((r) => (
+              <TableCell
+                key={r}
+                rowSpan={2}
+                align="right"
+                sx={{ ...HEAD, ...CELL }}
+              >
+                <HelpLabel {...labels.columns[r]} />
+              </TableCell>
+            ))}
             <TableCell
               colSpan={roster.length}
               align="center"
@@ -69,15 +75,17 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
         </TableHead>
         <TableBody>
           {rows.map((s) => {
-            const terms = s.isQuery ? payload.expr.terms : [s.term];
+            const terms = isQuery(s) ? payload.expr.terms : [s.term];
             return (
               <TableRow key={s.term} hover>
                 <TableCell sx={CELL}>
-                  <TermCell series={s} ranking={ranking} />
+                  <TermCell series={s} />
                 </TableCell>
-                <TableCell align="right" sx={CELL}>
-                  <RankStatCell stats={s.overall} stat={ranking} />
-                </TableCell>
+                {TERM_TYPES.map((r) => (
+                  <TableCell key={r} align="right" sx={CELL}>
+                    <StatCell overall={s.overall} stat={r} />
+                  </TableCell>
+                ))}
                 {s.byText.map((text) => {
                   const missing = missingById.get(text.id) ?? [];
                   return (
@@ -103,16 +111,22 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
   );
 }
 
+// Query first, then each type's terms in the backend's order.
+const byTypeThenRank = (a, b) =>
+  isQuery(b) - isQuery(a) ||
+  TERM_TYPES.indexOf(a.type) - TERM_TYPES.indexOf(b.type) ||
+  a.rank - b.rank;
+
 const SWATCH_MIN_H = 2;
 
-function SeriesSwatch({ color, isQuery }) {
+function SeriesSwatch({ color, query }) {
   return (
     <Box
       sx={{
         width: 14,
         height: Math.max(
           SWATCH_MIN_H,
-          isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W,
+          query ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W,
         ),
         bgcolor: color,
         borderRadius: 1,
@@ -122,18 +136,14 @@ function SeriesSwatch({ color, isQuery }) {
   );
 }
 
-// Only the sorted-on statistic gets a column, so the other one has nowhere else
-// to appear. It goes here rather than being dropped: the two are read against
-// each other -- a term can be stable and still be the one the books disagree
-// about -- and losing half that comparison to a dropdown toggle costs more than
-// a tooltip line.
-function TermCell({ series, ranking }) {
+function TermCell({ series }) {
+  const color = TERM_TYPE_COLOR[series.type];
   const term = (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <SeriesSwatch color={series.color} isQuery={series.isQuery} />
+      <SeriesSwatch color={color} query={isQuery(series)} />
       <Typography
         variant="body2"
-        sx={{ fontWeight: series.isQuery ? 700 : 500 }}
+        sx={{ fontWeight: isQuery(series) ? 700 : 500, color }}
       >
         {series.term}
       </Typography>
@@ -143,27 +153,20 @@ function TermCell({ series, ranking }) {
   if (!series.overall) return term;
 
   const { n_books_in } = series.overall;
-  const others = TERM_RANKINGS.filter((r) => r !== ranking);
   return (
     <Tooltip
-      title={
-        others
-          .map((r) => `${labels.columns[r].short} ${series.overall[RANKING_FIELD[r]].toFixed(3)}`)
-          .join(" · ") +
-        ` · measured across the ${n_books_in} ` +
-        `book${n_books_in === 1 ? "" : "s"} that use it.`
-      }
+      title={`Measured in ${n_books_in} book${n_books_in === 1 ? "" : "s"}`}
     >
       <Box sx={{ cursor: "help", display: "inline-block" }}>{term}</Box>
     </Tooltip>
   );
 }
 
-function RankStatCell({ stats, stat }) {
-  if (!stats) return <Dash />;
+function StatCell({ overall, stat }) {
+  if (!overall) return <Dash />;
   return (
     <Typography variant="body2" sx={NUM}>
-      {stats[RANKING_FIELD[stat]].toFixed(3)}
+      {overall[TERM_TYPE_STAT[stat]].toFixed(3)}
     </Typography>
   );
 }

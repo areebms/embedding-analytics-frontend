@@ -1,19 +1,16 @@
-import { seriesColor, QUERY_COLOR } from "./palette";
-import { DEFAULT_TERM_RANKING, RANKING_FIELD } from "../../types/api";
+import { TERM_TYPES, TERM_TYPE_LIST } from "../../types/api";
 import type {
   BookResponse,
   BookSimilarity,
-  TermRanking,
   SemanticDriftResponse,
 } from "../../types/api";
 import type { DiachronicSeries, Series, BookData } from "./types";
 
-export const CHART_TERM_LIMIT = 5;
+export const isQuery = ({ type }: Pick<Series, "type">) => type === "query";
 
 export function buildSeries(
   payload: SemanticDriftResponse | null,
   allBooks: BookResponse[],
-  ranking: TermRanking = DEFAULT_TERM_RANKING,
 ): DiachronicSeries {
   if (!payload || !allBooks.length) {
     return { series: [], roster: [] };
@@ -39,37 +36,27 @@ export function buildSeries(
       : null;
   };
 
-  const stat = RANKING_FIELD[ranking];
-  const ranked = [...payload.comparative_terms].sort(
-    (a, b) => b[stat] - a[stat],
-  );
-  const rankedColorCount = Math.min(ranked.length, CHART_TERM_LIMIT);
-
-  const rankedLines = ranked.map(({ term, book_similarities, ...overall }, i) =>
-    toSeries(
-      {
-        term,
-        isQuery: false,
-        rank: i + 1,
-        color: seriesColor(i + 1, rankedColorCount),
-        overall,
-      },
-      book_similarities,
-    ),
+  // A term in both lists keeps its first type: consistent wins.
+  const seen = new Set<string>();
+  const ranked = TERM_TYPES.flatMap((type) =>
+    payload[TERM_TYPE_LIST[type]]
+      .filter(({ term }) => !seen.has(term) && seen.add(term))
+      .map(({ term, book_similarities, ...overall }, i) =>
+        toSeries({ term, rank: i + 1, type, overall }, book_similarities),
+      ),
   );
 
   const query = toSeries(
     {
       term: payload.expr.expr,
-      isQuery: true,
       rank: 0,
-      color: QUERY_COLOR,
+      type: "query",
       overall: null,
     },
     payload.expr.book_similarities,
   );
 
-  const series = [...rankedLines.reverse(), query].filter((s) => s !== null);
+  const series = [...ranked.reverse(), query].filter((s) => s !== null);
 
   return { series, roster };
 }
