@@ -55,7 +55,7 @@ export default function App() {
     [expression],
   );
 
-  const [guideOpen, setGuideOpen] = useState(null);
+  const [guideOpen, setGuideOpen] = useState(true);
 
   const { data: allBooks = [], isSuccess: booksLoaded } = useBooks();
 
@@ -244,11 +244,9 @@ export default function App() {
           </Paper>
         </Container>
 
-        {guideOpen !== null && (
-          <Suspense fallback={null}>
-            <GuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
-          </Suspense>
-        )}
+        <Suspense fallback={null}>
+          <GuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
+        </Suspense>
       </Box>
     </ThemeProvider>
   );
