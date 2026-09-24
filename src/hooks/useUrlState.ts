@@ -6,7 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
-const DEFAULT_EXPRESSION = "market";
+const DEFAULT_EXPRESSION = "value";
 const VIEW = "overview";
 
 export const CHART_TABS = ["scatter", "diachronic"] as const;
