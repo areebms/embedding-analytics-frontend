@@ -1,29 +1,29 @@
 import { useMemo, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import {
   ResponsiveContainer,
   ComposedChart,
   Line,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  ErrorBar,
   Tooltip,
   Label,
 } from "recharts";
 
-import ChartMessage, { ChartSpinner } from "./ChartMessage";
-import { INK } from "./palette";
-import { buildDiachronicSeries, buildChartModel, isDrawn } from "./series";
-import { SeriesDot, DotTooltip, SeriesLabels } from "./marks";
-import { labels } from "../../content/labels";
+import { ChartEmpty } from "../charts/ChartArea";
+import { INK, TERM_TYPE_COLOR } from "../charts/palette";
+import { buildSeries, isQuery } from "../charts/series";
 import {
   CHART_HEIGHT,
   CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  AXIS_LABEL_SIZE,
-  TICK_LABEL_SIZE,
+  X_AXIS,
+  Y_AXIS,
+} from "../charts/layout";
+import { buildChartModel } from "./model";
+import { SeriesDot, DotTooltip, SeriesLabels } from "./marks";
+import { labels } from "../../content/labels";
+import {
   QUERY_DOT_R,
   NEIGHBOUR_DOT_R,
   QUERY_STROKE_W,
@@ -34,43 +34,17 @@ import {
   labelColumnWidth,
 } from "./layout";
 
-const AXIS_TITLE_STYLE = {
-  textAnchor: "middle",
-  fill: INK.title,
-  fontWeight: 600,
-  fontSize: AXIS_LABEL_SIZE,
-};
-
 const formatTick = (v) => v.toFixed(2);
 
-const X_AXIS_TITLE = (
-  <Label
-    value="Publication year"
-    position="insideBottom"
-    offset={-2}
-    style={AXIS_TITLE_STYLE}
-  />
-);
-
-export default function DiachronicChart({
-  payload,
-  refBook,
-  term,
-  isLoading,
-  hasError,
-  allBooks,
-  ranking,
-}) {
+export default function DiachronicChart({ payload, term, allBooks }) {
   const [activeTerm, setActiveTerm] = useState(null);
 
-  const { series: allSeries, roster } = useMemo(
-    () => buildDiachronicSeries(payload, allBooks, refBook, ranking),
-    [payload, allBooks, refBook, ranking],
+  const { series, roster } = useMemo(
+    () => buildSeries(payload, allBooks),
+    [payload, allBooks],
   );
 
-  const series = useMemo(() => allSeries.filter(isDrawn), [allSeries]);
-
-  const { chartData, xDomain, yMin, yMax, xTicks, yTicks } = useMemo(
+  const { chartData, xDomain, yDomain, xTicks, yTicks } = useMemo(
     () => buildChartModel(series, roster),
     [series, roster],
   );
@@ -80,34 +54,16 @@ export default function DiachronicChart({
   const accessors = useMemo(
     () =>
       new Map(
-        series.map((s) => [
-          s.term,
-          {
-            value: (row) => row.values[s.term]?.agreement,
-            band: (row) => row.values[s.term]?.band,
-            ci: (row) => row.values[s.term]?.ci,
-          },
-        ]),
+        series.map((s) => [s.term, (row) => row.values[s.term]]),
       ),
     [series],
   );
 
-  if (isLoading) return <ChartSpinner />;
-
   if (!series.length) {
-    return (
-      <ChartMessage height={CHART_HEIGHT}>
-        <Typography variant="body1" color="text.secondary" align="center">
-          {emptyStateMessage({ term, hasError, payload })}
-        </Typography>
-      </ChartMessage>
-    );
+    return <ChartEmpty message={labels.diachronic.empty(term)} />;
   }
 
-  const yTitle = refBook
-    ? labels.agreement.pinned(refBook.label)
-    : labels.agreement.label;
-  const querySeries = series.find((s) => s.isQuery);
+  const yTitle = labels.similarity.label;
   const activeSeries = series.find((s) => s.term === activeTerm);
 
   return (
@@ -120,45 +76,26 @@ export default function DiachronicChart({
             strokeDasharray="3 3"
           />
           <XAxis
-            type="number"
+            {...X_AXIS.props}
             dataKey="year"
             domain={xDomain}
             ticks={xTicks}
-            niceTicks="none"
             padding={{
               left: labelColumn + LABEL_GAP_X,
               right: X_AXIS_PAD_RIGHT,
             }}
             allowDecimals={false}
-            height={38}
-            tick={{ fontSize: TICK_LABEL_SIZE, fill: INK.tick }}
-            axisLine={{ stroke: INK.axis }}
-            tickLine={{ stroke: INK.axis }}
           >
-            {X_AXIS_TITLE}
+            <Label value="Publication year" {...X_AXIS.title} />
           </XAxis>
           <YAxis
-            type="number"
-            domain={[yMin, yMax]}
+            {...Y_AXIS.props}
+            domain={yDomain}
             padding={{ top: Y_AXIS_PAD, bottom: Y_AXIS_PAD }}
             ticks={yTicks}
-            niceTicks="none"
             tickFormatter={formatTick}
-            width={Y_AXIS_WIDTH}
-            tick={{
-              fontSize: TICK_LABEL_SIZE,
-              fill: INK.tick,
-              fontVariantNumeric: "tabular-nums",
-            }}
-            axisLine={{ stroke: INK.axis }}
-            tickLine={{ stroke: INK.axis }}
           >
-            <Label
-              value={yTitle}
-              angle={-90}
-              position="insideLeft"
-              style={AXIS_TITLE_STYLE}
-            />
+            <Label value={yTitle} {...Y_AXIS.title} />
           </YAxis>
 
           <Tooltip
@@ -167,61 +104,38 @@ export default function DiachronicChart({
             content={
               <DotTooltip
                 activeTerm={activeTerm}
-                color={activeSeries?.color}
+                color={activeSeries && TERM_TYPE_COLOR[activeSeries.type]}
                 measure={yTitle}
               />
             }
           />
 
-          {querySeries && (
-            <Area
-              type="linear"
-              dataKey={accessors.get(querySeries.term).band}
-              stroke="none"
-              fill={querySeries.color}
-              fillOpacity={0.15}
-              connectNulls={false}
-              isAnimationActive={false}
-              activeDot={false}
-              tooltipType="none"
-            />
-          )}
-
           {series.map((s) => {
-            const revealed = s.isQuery || activeTerm === s.term;
+            const emphasised = isQuery(s) || activeTerm === s.term;
+            const color = TERM_TYPE_COLOR[s.type];
             return (
               <Line
                 key={s.term}
                 type="linear"
-                dataKey={accessors.get(s.term).value}
+                dataKey={accessors.get(s.term)}
                 name={s.term}
-                stroke={s.color}
-                strokeWidth={s.isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}
-                strokeOpacity={revealed ? 1 : 0}
-                connectNulls={false}
+                stroke={color}
+                strokeWidth={isQuery(s) ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W}
+                strokeOpacity={emphasised ? 1 : 0}
+                connectNulls
                 isAnimationActive={false}
                 activeDot={false}
                 dot={(props) => (
                   <SeriesDot
                     {...props}
-                    color={s.color}
-                    r={s.isQuery ? QUERY_DOT_R : NEIGHBOUR_DOT_R}
+                    color={color}
+                    r={isQuery(s) ? QUERY_DOT_R : NEIGHBOUR_DOT_R}
+                    faded={!emphasised}
                     onEnter={() => setActiveTerm(s.term)}
                     onLeave={() => setActiveTerm(null)}
                   />
                 )}
-              >
-                {!s.isQuery && revealed && (
-                  <ErrorBar
-                    dataKey={accessors.get(s.term).ci}
-                    direction="y"
-                    width={4}
-                    strokeWidth={1}
-                    stroke={s.color}
-                    strokeOpacity={0.45}
-                  />
-                )}
-              </Line>
+              />
             );
           })}
 
@@ -234,11 +148,4 @@ export default function DiachronicChart({
       </ResponsiveContainer>
     </Box>
   );
-}
-
-function emptyStateMessage({ term, hasError, payload }) {
-  if (!term) return "Select a term to plot.";
-  if (hasError) return "Nothing to plot.";
-  if (!payload?.books?.length) return "No books to compare.";
-  return `'${term}' could not be compared across books.`;
 }

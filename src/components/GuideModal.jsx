@@ -2,61 +2,91 @@ import { useState } from "react";
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
-  MobileStepper,
+  Divider,
+  IconButton,
+  Link,
+  List,
+  ListItem,
   Stack,
+  Tab,
+  Tabs,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import DifferenceIcon from "@mui/icons-material/Difference";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import SouthIcon from "@mui/icons-material/South";
 import { labels } from "../content/labels";
+import { TERM_TYPE_COLOR } from "./charts/palette";
 
-function ExpressionChip({ label }) {
+const BODY_LINE_HEIGHT = 1.6;
+
+function Body({ children, sx }) {
   return (
-    <Chip
-      label={label}
-      variant="outlined"
-      size="small"
-      sx={{
-        fontFamily: "monospace",
-        bgcolor: "background.paper",
-        maxWidth: "100%",
-        "& .MuiChip-label": {
-          overflowWrap: "anywhere",
-          whiteSpace: "normal",
-        },
-      }}
-    />
+    <Typography
+      variant="body2"
+      color="text.secondary"
+      sx={{ lineHeight: BODY_LINE_HEIGHT, ...sx }}
+    >
+      {children}
+    </Typography>
   );
 }
 
-function DescribeBlock({ children }) {
+function Section({ title, children }) {
+  return (
+    <Box component="section">
+      <Typography
+        variant="h6"
+        component="h3"
+        sx={{ fontSize: "1.125rem", fontWeight: 700, mb: 1 }}
+      >
+        {title}
+      </Typography>
+      <Stack spacing={1.5}>{children}</Stack>
+    </Box>
+  );
+}
+
+function SubSection({ title, children }) {
+  return (
+    <Stack spacing={1}>
+      <Typography variant="subtitle2" component="h4" sx={{ fontWeight: 600 }}>
+        {title}
+      </Typography>
+      {children}
+    </Stack>
+  );
+}
+
+// One chip per token, as the query input draws them.
+function Expression({ value }) {
+  const tokens = value.replace(/([()])/g, " $1 ").trim().split(/\s+/);
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+      {tokens.map((token, i) => (
+        <Chip key={`${i}-${token}`} label={token} size="small" />
+      ))}
+    </Box>
+  );
+}
+
+function Operator({ children }) {
   return (
     <Box
       component="code"
       sx={{
-        display: "inline-block",
-        maxWidth: "100%",
+        px: 0.75,
+        borderRadius: 1,
+        bgcolor: "action.selected",
         fontFamily: "monospace",
-        fontSize: "0.8125rem",
-        bgcolor: "action.hover",
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 0,
-        px: 1.25,
-        py: 0.25,
-        overflowWrap: "anywhere",
+        fontWeight: 700,
+        color: "text.primary",
       }}
     >
       {children}
@@ -64,281 +94,295 @@ function DescribeBlock({ children }) {
   );
 }
 
-function GuideCard({ icon, title, children }) {
+function Example({ label, caption, children }) {
   return (
-    <Card
-      variant="outlined"
+    <Box
       sx={{
-        height: "100%",
-        borderRadius: 2,
-        bgcolor: "background.paper",
+        p: 1.5,
+        borderRadius: 1,
+        border: 1,
+        borderColor: "divider",
+        bgcolor: "background.default",
       }}
     >
-      <CardContent sx={{ p: 2.25, "&:last-child": { pb: 2.25 } }}>
-        <Stack direction="row" spacing={1.25} alignItems="flex-start">
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              display: "grid",
-              placeItems: "center",
-              flexShrink: 0,
-              color: "primary.main",
-              bgcolor: "action.hover",
-            }}
-          >
-            {icon}
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75 }}>
-              {title}
-            </Typography>
-            <Stack spacing={1}>{children}</Stack>
-          </Box>
-        </Stack>
-      </CardContent>
-    </Card>
+      {label && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", fontWeight: 600, mb: 0.75 }}
+        >
+          {label}
+        </Typography>
+      )}
+      {children}
+      {caption && <Body sx={{ mt: 1 }}>{caption}</Body>}
+    </Box>
   );
 }
 
-function StepHeader({ title }) {
+function DescribeText({ children }) {
   return (
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700 }}>
-        {title}
+    <Box
+      sx={{
+        display: "inline-block",
+        maxWidth: "100%",
+        px: 1.25,
+        py: 0.25,
+        borderRadius: 1,
+        border: 1,
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        typography: "body2",
+        overflowWrap: "anywhere",
+      }}
+    >
+      “{children}”
+    </Box>
+  );
+}
+
+function TermKind({ type, children }) {
+  return (
+    <ListItem disableGutters sx={{ alignItems: "flex-start", gap: 1.25, py: 0.5 }}>
+      <Box
+        sx={{
+          width: 10,
+          height: 10,
+          mt: "6px",
+          borderRadius: "50%",
+          flexShrink: 0,
+          bgcolor: TERM_TYPE_COLOR[type],
+        }}
+      />
+      <Body>
+        <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+          {labels.comparativeTerms.types[type]} terms
+        </Box>{" "}
+        {children}
+      </Body>
+    </ListItem>
+  );
+}
+
+function IntroductionTab() {
+  return (
+    <Stack spacing={3}>
+      <Typography variant="body1" sx={{ lineHeight: BODY_LINE_HEIGHT }}>
+        Two documents can use the same word to mean vastly different things.
+        Embedding Analytics measures that difference. For each text, the tool
+        encodes which words tend to appear in similar surroundings into
+        numerical word vectors (using PPMI + SVD). Semantically similar words
+        end up with similar vectors. When you enter a query, the tool finds the
+        terms whose usage in each text most resembles the query's.
       </Typography>
-    </Box>
-  );
-}
 
-function ExploreStep() {
-  return (
-    <Box>
-      <StepHeader title="Compare how different authors use the same word" />
-
-      <Stack spacing={2.25}>
-        <GuideCard icon={<SearchIcon fontSize="small" />} title="Overview">
-          <Typography variant="body2" color="text.secondary">
-            Search a word to see which concepts surround it across texts by
-            Smith, Ricardo, Mill, Steuart, and Bastiat. Compare associations to
-            spot shared vocabulary and track how ideas shift over time.
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            Go further with vector expressions. Enter{" "}
-            <ExpressionChip label="labour + (productive - unproductive)" /> to
-            probe a specific conceptual distinction rather than just browsing
-            terms.
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            If expressions feel like too much, switch the input to Describe and
-            write what you want in plain English instead. The next step covers
-            both.
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            Every score carries a confidence range, and what it varies depends on
-            how you are reading the corpus. With no book pinned, it is the spread
-            across the other books, so a wide band means the authors themselves
-            disagreed. Pin a book and it becomes the spread across an ensemble of
-            Word2Vec models trained on the same text from different starting
-            points, so a wide band means the models disagreed and the number is
-            not one to lean on. The two are not comparable in width — read each
-            for what it varies.
-          </Typography>
-        </GuideCard>
-
-        <GuideCard
-          icon={<BarChartIcon fontSize="small" />}
-          title="Reading the chart"
+      <Section title="Making texts comparable">
+        <Body>
+          Since each text's vectors are built independently, the vector
+          similarities from different texts are not directly comparable. To
+          correct this, the query's average similarity to its 75 closest terms
+          in each text is treated as that text's baseline. Each text's
+          similarities are then shifted so that its baseline equals the average
+          baseline across all texts, which makes them more comparable. This
+          adjustment is adapted from cross-domain similarity local scaling (
+          <Link
+            href="https://arxiv.org/abs/1710.04087"
+            target="_blank"
+            rel="noopener"
+          >
+            Conneau et al., 2018
+          </Link>
+          ).
+        </Body>
+        <Body
+          sx={{
+            color: "text.primary",
+            borderLeft: 3,
+            borderColor: "divider",
+            pl: 1.5,
+          }}
         >
-          <Typography variant="body2" color="text.secondary">
-            Books run along the horizontal axis in order of publication, so
-            reading left to right is reading forward in time. Each line follows
-            one term: your query, plus the terms used closest to it. Height shows
-            how closely that term keeps the same company in each book — its{" "}
-            <b>definitional agreement</b>, which is what the vertical axis
-            measures — and the shaded band around it is the confidence range.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            The vertical axis runs below zero as well as above it. Above zero, a
-            book keeps the company the other books also keep, and the higher it
-            sits the more they agree. Around zero there is little shared context
-            either way. Below zero the book keeps different company from the
-            rest of the corpus for that term.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            A line that drifts as it moves right is the thing to look at: the
-            term is keeping different company in later books than in earlier
-            ones. That change in agreement along a line is <b>definitional
-            drift</b>, and it is the starting point for analysis — the movement
-            matters more than any single point on it. Is the meaning of the word
-            shifting over time? Is the author engaged in a different debate?
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Pin a book from the rail on the left to read every line relative to
-            that author. With nothing pinned, each book is instead compared
-            against all the others, showing how far it agrees with the corpus as
-            a whole.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            The "{labels.comparativeTerms.label}" dropdown decides which of
-            those companion terms get drawn. "{labels.comparativeTerms.rankings.stability}"
-            ranks them by how consistently each one sits near your query
-            across the whole corpus. "{labels.comparativeTerms.rankings.instability}"
-            ranks the same terms by how much that closeness varies from book
-            to book instead — the lines with something to say about change
-            rather than about resemblance.
-          </Typography>
-        </GuideCard>
-      </Stack>
-    </Box>
+          Adjusted similarities from different queries cannot be compared.
+        </Body>
+      </Section>
+
+      <Section title="Selecting relevant terms">
+        <Body>
+          A term is considered relevant if its adjusted similarity to the query
+          is above the baseline in at least 20% of the texts. For each relevant
+          term, the tool calculates its mean adjusted similarity and the
+          standard deviation of that similarity across the collection. Two
+          lists of six terms are then chosen:
+        </Body>
+        <List disablePadding>
+          <TermKind type="consistent">
+            have the highest mean similarity. They are closely tied to the
+            query across the collection.
+          </TermKind>
+          <TermKind type="contested">
+            have the highest standard deviation. They are close to the query in
+            some texts but not in others, which shows where its meaning shifts.
+          </TermKind>
+        </List>
+      </Section>
+    </Stack>
   );
 }
 
-function QueryingStep() {
+function QueryingTab() {
   return (
-    <Box>
-      <StepHeader title="Querying Concepts" />
+    <Stack spacing={3}>
+      <Section title="Vector expressions">
+        <Stack spacing={2.5}>
+          <SubSection title="Searching terms">
+            <Body>
+              Type a word into the search box and select from the autocomplete
+              dropdown. The dropdown contains terms drawn directly from the
+              corpus.
+            </Body>
+          </SubSection>
 
-      <Stack spacing={2.25}>
-        <GuideCard
-          icon={<DifferenceIcon fontSize="small" />}
-          title="Vector expressions"
-        >
-          <Typography variant="subtitle2">Searching terms</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Type a word into the search box and select from the autocomplete
-            dropdown. The dropdown contains terms drawn directly from the
-            corpus.
-          </Typography>
+          <SubSection title="Adding terms">
+            <Body>
+              Words can carry multiple meanings, so a single term query may
+              return unrelated concepts. Use <Operator>+</Operator> to pull
+              results toward a more specific meaning.
+            </Body>
+            <Example caption='Narrows the context around "capital", pulling it toward its economic sense and away from the geographical one.'>
+              <Expression value="capital + profit" />
+            </Example>
+          </SubSection>
 
-          <Typography variant="subtitle2" sx={{ mt: 1 }}>
-            Adding terms
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Words can carry multiple meanings, so a single term query may return
-            unrelated concepts. Use + to pull results toward a more specific
-            meaning.
-          </Typography>
-          <Box>
-            <ExpressionChip label="capital + profit" />
-          </Box>
-          <Typography variant="body2" color="text.secondary">
-            Narrows the context around "capital", pulling it toward its economic
-            sense and away from the geographical one.
-          </Typography>
+          <SubSection title="Subtracting terms">
+            <Body>
+              Opposites tend to be discussed in the same company, so they sit
+              close together and a single term query may return them. Use{" "}
+              <Operator>-</Operator> to push an unwanted direction away.
+            </Body>
+            <Example caption='Pushes the query away from association with "unproductive" to isolate what is distinctive about "productive".'>
+              <Expression value="productive - unproductive" />
+            </Example>
+          </SubSection>
 
-          <Typography variant="subtitle2" sx={{ mt: 1 }}>
-            Subtracting terms
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Word2Vec places antonyms close together, so a single term query may
-            return opposites. Use - to push an unwanted direction away.
-          </Typography>
-          <Box>
-            <ExpressionChip label="productive - unproductive" />
-          </Box>
-          <Typography variant="body2" color="text.secondary">
-            Pushes the query away from association with "unproductive" to
-            isolate what is distinctive about "productive".
-          </Typography>
+          <SubSection title="Combining expressions">
+            <Example
+              label="Without parentheses"
+              caption="Averages all three directions together."
+            >
+              <Expression value="labour + productive - unproductive" />
+            </Example>
+            <Example
+              label="With parentheses"
+              caption='Isolates the productive/unproductive contrast first, then adds "labour". This surfaces terms similar to productive labour but not unproductive labour.'
+            >
+              <Expression value="labour + (productive - unproductive)" />
+            </Example>
+          </SubSection>
+        </Stack>
+      </Section>
 
-          <Typography variant="subtitle2" sx={{ mt: 1 }}>
-            Combining expressions
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Without parentheses,{" "}
-            <ExpressionChip label="labour + productive - unproductive" />{" "}
-            averages all three directions together. With parentheses,{" "}
-            <ExpressionChip label="labour + (productive - unproductive)" />{" "}
-            isolates the productive/unproductive contrast first, then adds
-            "labour". This surfaces terms similar to productive labour but not
-            unproductive labour.
-          </Typography>
-        </GuideCard>
+      <Divider />
 
-        <GuideCard icon={<AutoAwesomeIcon fontSize="small" />} title="Describe">
-          <Typography variant="body2" color="text.secondary">
-            Describe what you are looking for in plain English without needing
-            to know how to construct an expression. The tool handles the
-            translation. For example,{" "}
-            <DescribeBlock>
-              productive vs unproductive labour
-            </DescribeBlock>{" "}
-            produces{" "}
-            <ExpressionChip label="labour + (productive - unproductive)" />. If
-            a term in your description is not in the corpus, the closest match
-            is substituted and flagged.
-          </Typography>
-        </GuideCard>
-      </Stack>
-    </Box>
+      <Section title="Describe">
+        <Body>
+          Describe what you are looking for in plain English without needing to
+          know how to construct an expression. The tool handles the
+          translation.
+        </Body>
+        <Example>
+          <Stack spacing={0.75} alignItems="flex-start">
+            <DescribeText>productive vs unproductive labour</DescribeText>
+            <SouthIcon
+              fontSize="small"
+              sx={{ color: "text.secondary", ml: 1 }}
+            />
+            <Expression value="labour + (productive - unproductive)" />
+          </Stack>
+        </Example>
+        <Body>
+          If a term in your description is not in the corpus, the closest match
+          is substituted and flagged.
+        </Body>
+      </Section>
+    </Stack>
   );
 }
 
-const steps = [ExploreStep, QueryingStep];
+const tabs = [
+  { label: "Introduction", Content: IntroductionTab },
+  { label: "Querying concepts", Content: QueryingTab },
+];
 
 export default function GuideModal({ open, onClose }) {
-  const [activeStep, setActiveStep] = useState(0);
+  const [tab, setTab] = useState(0);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const StepContent = steps[activeStep];
+  const TabContent = tabs[tab].Content;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       fullScreen={isMobile}
-      TransitionProps={{ onExited: () => setActiveStep(0) }}
+      aria-labelledby="guide-title"
+      TransitionProps={{ onExited: () => setTab(0) }}
       PaperProps={{
-        sx: { borderRadius: { xs: 0, sm: 2.5 } },
+        sx: {
+          borderRadius: { xs: 0, sm: 2.5 },
+          height: { sm: "min(720px, 90vh)" },
+        },
       }}
     >
-      <DialogTitle sx={{ fontWeight: 700 }}>
+      <DialogTitle id="guide-title" sx={{ fontWeight: 700, pr: 7, pb: 0.5 }}>
         Using Embedding Analytics
+        <IconButton
+          aria-label="Close"
+          onClick={onClose}
+          sx={{ position: "absolute", top: 12, right: 12 }}
+        >
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
-      <DialogContent>
-        <StepContent />
+      <Tabs
+        value={tab}
+        onChange={(_, next) => setTab(next)}
+        sx={{ px: 1.5, borderBottom: 1, borderColor: "divider" }}
+      >
+        {tabs.map(({ label }, i) => (
+          <Tab
+            key={label}
+            label={label}
+            id={`guide-tab-${i}`}
+            aria-controls="guide-tabpanel"
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          />
+        ))}
+      </Tabs>
+
+      {/* Keyed so a tab switch starts at the top rather than at the old scroll. */}
+      <DialogContent
+        key={tab}
+        role="tabpanel"
+        id="guide-tabpanel"
+        aria-labelledby={`guide-tab-${tab}`}
+        sx={{ pt: 3 }}
+      >
+        <TabContent />
       </DialogContent>
 
-      <MobileStepper
-        variant="dots"
-        steps={steps.length}
-        position="static"
-        activeStep={activeStep}
-        sx={{ bgcolor: "transparent", px: 3, py: 1.5 }}
-        nextButton={
-          <Stack direction="row" spacing={1}>
-            <Button
-              size="small"
-              onClick={() => setActiveStep((s) => s + 1)}
-              disabled={activeStep === steps.length - 1}
-            >
-              Next
-              <KeyboardArrowRight />
-            </Button>
-            <Button size="small" onClick={onClose}>
-              Close
-            </Button>
-          </Stack>
-        }
-        backButton={
-          <Button
-            size="small"
-            onClick={() => setActiveStep((s) => s - 1)}
-            disabled={activeStep === 0}
-          >
-            <KeyboardArrowLeft />
-            Back
-          </Button>
-        }
-      />
+      <DialogActions sx={{ px: 3, py: 1.5, borderTop: 1, borderColor: "divider" }}>
+        <Button
+          variant="contained"
+          disableElevation
+          onClick={onClose}
+          sx={{ textTransform: "none", fontWeight: 600 }}
+        >
+          Got it
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

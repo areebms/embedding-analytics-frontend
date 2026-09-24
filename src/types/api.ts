@@ -13,62 +13,60 @@ export interface TermResponse {
   books: number[];
 }
 
-export const LOCAL_ANCHOR_FLOOR = 75;
-
-export const MIN_BOOKS_FOR_COMPARISON = 4;
-
 export interface SemanticDriftRequestBody {
   tree: OperationTree;
   book_ids: number[];
 }
 
-export interface DefinitionalAgreement {
+export interface BookSimilarity {
   book_id: number;
-  mean_local_similarity: number;
-  ci: [number, number];
+  similarity: number;
   occurrences: number;
-  n_seeds: number;
 }
 
-export interface DefinitionalAgreementToCorpus extends DefinitionalAgreement {
-  n_books: number;
-}
-
-export type BookAgreement =
-  | DefinitionalAgreement
-  | DefinitionalAgreementToCorpus;
-
-export interface ExprData {
+export interface ExprSimilarityData {
   expr: string;
   terms: string[];
-  books: BookAgreement[];
+  book_similarities: BookSimilarity[];
 }
 
-export interface TermData {
+export interface TermSimilarityData {
   term: string;
-  stability: number;
-  instability: number;
+  similarity_mean: number;
+  similarity_std: number;
   n_books_in: number;
-  n_books_as_top50: number;
-  n_books_as_top100: number;
-  books: BookAgreement[];
+  book_similarities: BookSimilarity[];
 }
 
-export const TERM_RANKINGS = ["stability", "instability"] as const;
-export type TermRanking = (typeof TERM_RANKINGS)[number];
-export const DEFAULT_TERM_RANKING: TermRanking = "stability";
+// Keys are the UI's term types; values are the backend's wire names.
+export const TERM_TYPE_STAT = {
+  consistent: "similarity_mean",
+  contested: "similarity_std",
+} as const;
+export type TermType = keyof typeof TERM_TYPE_STAT;
+export type TermStatField = (typeof TERM_TYPE_STAT)[TermType];
+export const TERM_TYPES = Object.keys(TERM_TYPE_STAT) as TermType[];
 
+// Only books the backend scored get a row. `missing_terms`: which of the
+// returned related terms this book never uses.
 export interface BookSummary {
   id: number;
   n_shared_terms: number;
   missing_terms?: string[];
 }
 
+// Each list is already ranked by the backend, best first.
 export interface SemanticDriftResponse {
-  expr: ExprData;
-  comparative_terms: TermData[];
-  books: BookSummary[];
+  expr: ExprSimilarityData;
+  top_mean: TermSimilarityData[];
+  top_std: TermSimilarityData[];
+  book_stats: BookSummary[];
 }
+
+export const TERM_TYPE_LIST = {
+  consistent: "top_mean",
+  contested: "top_std",
+} as const satisfies Record<TermType, keyof SemanticDriftResponse>;
 
 export interface SubstitutionResponse {
   original: string;

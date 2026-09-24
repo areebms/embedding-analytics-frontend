@@ -30,6 +30,11 @@
       so it letterboxes slightly rather than filling edge to edge. Recropping to
       1.91 is the only thing left to make it render flush.
     -->
+    <!--
+      Only twitter:card is needed: the card parser falls back to og:title,
+      og:description and og:image, so mirroring those here would just be a
+      second copy of the same sentences to keep in sync.
+    -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       property="og:image"
@@ -39,19 +44,7 @@
     <meta property="og:image:height" content="681" />
     <meta
       property="og:image:alt"
-      content="The query &quot;value&quot; read across five books, 1767 to 1850, each score carrying a 95% confidence interval."
-    />
-    <meta
-      name="twitter:image"
-      content="https://www.embedding-analytics.com/og-image.png"
-    />
-    <meta
-      name="twitter:title"
-      content="Embedding Analytics — compare how documents use the same word"
-    />
-    <meta
-      name="twitter:description"
-      content="Two authors can use the same word and mean different things by it. See which terms a set of documents agree on, and which they place inconsistently."
+      content="The query &quot;value&quot; read across five books, 1767 to 1850."
     />
   </head>
   <body>

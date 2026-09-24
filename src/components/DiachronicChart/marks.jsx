@@ -1,17 +1,32 @@
 import { useMemo } from "react";
-import { Box } from "@mui/material";
 import { Text, usePlotArea, useYAxisScale } from "recharts";
 
-import { INK } from "./palette";
+import { INK, TERM_TYPE_COLOR } from "../charts/palette";
+import { isQuery } from "../charts/series";
+import { labels } from "../../content/labels";
+import { TooltipCard, TooltipTitle, TooltipRow } from "../charts/tooltip";
 import {
-  LABEL_LINE_H,
   LABEL_FONT_SIZE,
+  TERM_LABEL_HALO,
+  termWeight,
+} from "../charts/layout";
+import {
+  DOT_FADED_OPACITY,
+  LABEL_LINE_H,
   labelLines,
   stackLabels,
-  termWeight,
 } from "./layout";
 
-export function SeriesDot({ cx, cy, value, color, r, onEnter, onLeave }) {
+export function SeriesDot({
+  cx,
+  cy,
+  value,
+  color,
+  r,
+  faded,
+  onEnter,
+  onLeave,
+}) {
   if (cx == null || cy == null || value == null) return null;
   return (
     <circle
@@ -21,6 +36,7 @@ export function SeriesDot({ cx, cy, value, color, r, onEnter, onLeave }) {
       fill={color}
       stroke={INK.surface}
       strokeWidth={1}
+      opacity={faded ? DOT_FADED_OPACITY : 1}
       // The dot is filled, so it would catch the pointer anyway; saying so keeps
       // the hover from depending on that.
       style={{ pointerEvents: "all" }}
@@ -32,65 +48,17 @@ export function SeriesDot({ cx, cy, value, color, r, onEnter, onLeave }) {
 
 export function DotTooltip({ active, payload, activeTerm, color, measure }) {
   const row = payload?.[0]?.payload;
-  const point = active && activeTerm ? row?.values?.[activeTerm] : null;
-  if (!point) return null;
-  const [lo, hi] = point.band ?? [];
+  const similarity = active && activeTerm ? row?.values?.[activeTerm] : null;
+  if (similarity == null) return null;
   return (
-    <Box
-      sx={{
-        background: "rgba(17,24,39,0.94)",
-        color: "#fff",
-        borderRadius: 1,
-        px: 1.5,
-        py: 1,
-        fontSize: 12,
-        lineHeight: 1.55,
-        pointerEvents: "none",
-        boxShadow: 3,
-        whiteSpace: "nowrap",
-      }}
-    >
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>
-        Usage of {activeTerm} in {row.book}
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span
-          style={{
-            flex: "0 0 auto",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: color,
-            display: "inline-block",
-          }}
-        />
-        <span>{measure}</span>
-        <span
-          style={{ marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}
-        >
-          {point.agreement.toFixed(3)}
-        </span>
-      </div>
-      {lo != null && (
-        <div
-          style={{
-            display: "flex",
-            fontSize: 11,
-            marginTop: 2,
-            marginLeft: 14,
-            alignItems: "baseline",
-            gap: 6,
-          }}
-        >
-          <span>{"95% CI"}</span>
-          <span
-            style={{ marginLeft: "auto", fontVariantNumeric: "tabular-nums" }}
-          >
-            [{lo.toFixed(3)}, {hi.toFixed(3)}]
-          </span>
-        </div>
-      )}
-    </Box>
+    <TooltipCard>
+      <TooltipTitle>
+        {labels.similarity.pointTitle(activeTerm, row.book)}
+      </TooltipTitle>
+      <TooltipRow marker={color} label={measure}>
+        {similarity.toFixed(3)}
+      </TooltipRow>
+    </TooltipCard>
   );
 }
 
@@ -130,12 +98,9 @@ export function SeriesLabels({ series, width, onHover }) {
               verticalAnchor="start"
               width={width}
               fontSize={LABEL_FONT_SIZE}
-              fontWeight={termWeight(s.isQuery)}
-              fill={s.color}
-              stroke={INK.surface}
-              strokeWidth={3}
-              strokeLinejoin="round"
-              paintOrder="stroke"
+              fontWeight={termWeight(isQuery(s))}
+              fill={TERM_TYPE_COLOR[s.type]}
+              {...TERM_LABEL_HALO}
               pointerEvents="none"
             >
               {s.term}
@@ -150,9 +115,11 @@ export function SeriesLabels({ series, width, onHover }) {
 function place(series, width, plot, yScale) {
   const labelled = [];
   for (const s of series) {
-    const y = yScale(s.points[0].agreement);
+    const first = s.byText.find((t) => t.similarity !== undefined);
+    if (!first) continue;
+    const y = yScale(first.similarity);
     if (typeof y !== "number" || Number.isNaN(y)) continue;
-    const height = labelLines(s.term, s.isQuery, width) * LABEL_LINE_H;
+    const height = labelLines(s.term, isQuery(s), width) * LABEL_LINE_H;
     labelled.push({
       series: s,
       height,

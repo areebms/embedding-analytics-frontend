@@ -1,5 +1,4 @@
 import {
-  MIN_BOOKS_FOR_COMPARISON,
   type BookResponse,
   type Reason,
   type ReasonBody,
@@ -88,8 +87,8 @@ export function describeDriftError(
       return {
         severity: "info",
         message: label
-          ? `Fewer than ${MIN_BOOKS_FOR_COMPARISON} books use '${queryLabel}', so there is nothing to compare with ${label}. Try a more common term, or unpin ${label}.`
-          : `Fewer than ${MIN_BOOKS_FOR_COMPARISON} of these books use '${queryLabel}', so there is nothing to compare. Try a more common term.`,
+          ? `Too few of the books use '${queryLabel}', so there is nothing to compare with ${label}. Try a more common term, or unpin ${label}.`
+          : `Too few of these books use '${queryLabel}', so there is nothing to compare. Try a more common term.`,
       };
     }
 

@@ -5,18 +5,22 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
-import { TERM_RANKINGS, DEFAULT_TERM_RANKING } from "../types/api";
-import type { TermRanking } from "../types/api";
 
 const DEFAULT_EXPRESSION = "market";
 const VIEW = "overview";
 
-const RANKING_PARAM = "sort";
+export const CHART_TABS = ["scatter", "diachronic"] as const;
+export type ChartTab = (typeof CHART_TABS)[number];
+const CHART_TAB_PARAM = "chart";
 
-function toRanking(value: string | null): TermRanking {
-  return (TERM_RANKINGS as readonly string[]).includes(value ?? "")
-    ? (value as TermRanking)
-    : DEFAULT_TERM_RANKING;
+function toToken<T extends string>(
+  tokens: readonly T[],
+  value: string | null,
+  fallback: T,
+): T {
+  return (tokens as readonly string[]).includes(value ?? "")
+    ? (value as T)
+    : fallback;
 }
 
 export default function useUrlState() {
@@ -46,10 +50,13 @@ export default function useUrlState() {
     [setParam],
   );
 
-  const ranking = toRanking(params.get(RANKING_PARAM));
-  const setRanking = useCallback(
-    (value: TermRanking) =>
-      setParam(RANKING_PARAM, value, DEFAULT_TERM_RANKING),
+  const chartTab = toToken(
+    CHART_TABS,
+    params.get(CHART_TAB_PARAM),
+    CHART_TABS[0],
+  );
+  const setChartTab = useCallback(
+    (value: ChartTab) => setParam(CHART_TAB_PARAM, value, CHART_TABS[0]),
     [setParam],
   );
 
@@ -71,8 +78,8 @@ export default function useUrlState() {
   return {
     expression,
     setExpression,
-    ranking,
-    setRanking,
+    chartTab,
+    setChartTab,
     selectedBookId,
     setSelectedBookId,
   };

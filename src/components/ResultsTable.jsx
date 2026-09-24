@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Table,
   TableHead,
@@ -10,15 +10,25 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { buildDiachronicSeries, isDrawn } from "./DiachronicChart/series";
+import { buildSeries, isQuery } from "./charts/series";
+import { TERM_TYPE_COLOR } from "./charts/palette";
 import { QUERY_STROKE_W, NEIGHBOUR_STROKE_W } from "./DiachronicChart/layout";
 import { labels } from "../content/labels";
+import { TERM_TYPES, TERM_TYPE_STAT } from "../types/api";
 
-export default function ResultsTable({ payload, allBooks, ranking }) {
+export default function ResultsTable({ payload, allBooks }) {
   const { series, roster } = useMemo(
-    () => buildDiachronicSeries(payload, allBooks, null, ranking),
-    [payload, allBooks, ranking],
+    () => buildSeries(payload, allBooks),
+    [payload, allBooks],
   );
+  const missingById = useMemo(
+    () =>
+      new Map(
+        (payload?.book_stats ?? []).map((b) => [b.id, b.missing_terms ?? []]),
+      ),
+    [payload],
+  );
+  const { cells, offsets } = useFrozenOffsets(series.length > 0);
 
   if (!series.length) {
     return (
@@ -28,25 +38,51 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
     );
   }
 
-  const rows = series.filter(isDrawn).sort((a, b) => a.rank - b.rank);
+  const rows = [...series].sort(byTypeThenRank);
+  const frozen = (i) => frozenCell(offsets[i], i === FROZEN_COUNT - 1);
+  const headRef = (i) => (el) => {
+    cells.current[i] = el;
+  };
 
   return (
     <TableContainer>
-      <Table size="small" sx={{ minWidth: 650 }}>
+      <Table size="small" sx={{ minWidth: 650, borderCollapse: "separate" }}>
         <TableHead>
           <TableRow>
-            <TableCell rowSpan={2} sx={{ ...HEAD, ...CELL }}>
-              Expression
-            </TableCell>
-            <TableCell rowSpan={2} align="right" sx={{ ...HEAD, ...CELL }}>
-              <HelpLabel {...labels.columns[ranking]} />
-            </TableCell>
             <TableCell
-              colSpan={roster.length}
-              align="center"
-              sx={{ ...HEAD, ...CELL }}
+              ref={headRef(0)}
+              rowSpan={2}
+              sx={[HEAD, CELL, frozen(0)]}
             >
-              {labels.columns.booksGroup}
+              Term
+            </TableCell>
+            {TERM_TYPES.map((r, i) => (
+              <TableCell
+                key={r}
+                ref={headRef(i + 1)}
+                rowSpan={2}
+                align="right"
+                sx={[
+                  HEAD,
+                  CELL,
+                  NOWRAP,
+                  frozen(i + 1),
+                  { color: TERM_TYPE_COLOR[r] },
+                ]}
+              >
+                <HelpLabel {...labels.columns[r]} />
+              </TableCell>
+            ))}
+            <TableCell colSpan={roster.length} sx={[HEAD, CELL]}>
+              <Box
+                component="span"
+                sx={{
+                  position: { sm: "sticky" },
+                  left: offsets[FROZEN_COUNT] + GROUP_LABEL_INSET,
+                }}
+              >
+                {labels.booksGroup}
+              </Box>
             </TableCell>
           </TableRow>
           <TableRow>
@@ -59,30 +95,29 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
         </TableHead>
         <TableBody>
           {rows.map((s) => {
-            const byBook = new Map(s.points.map((p) => [p.id, p]));
-            const gapByBook = new Map(s.gaps.map((g) => [g.id, g]));
+            const terms = isQuery(s) ? payload.expr.terms : [s.term];
             return (
               <TableRow key={s.term} hover>
-                <TableCell sx={CELL}>
-                  <TermCell series={s} ranking={ranking} />
+                <TableCell sx={[CELL, frozen(0)]}>
+                  <TermCell series={s} />
                 </TableCell>
-                <TableCell align="right" sx={CELL}>
-                  <RankStatCell stats={s.stats} stat={ranking} />
-                </TableCell>
-                {roster.map((b) => {
-                  const p = byBook.get(b.id);
-                  const gap = gapByBook.get(b.id);
+                {TERM_TYPES.map((r, i) => (
+                  <TableCell key={r} align="right" sx={[CELL, frozen(i + 1)]}>
+                    <StatCell overall={s.overall} stat={r} />
+                  </TableCell>
+                ))}
+                {s.byText.map((text) => {
+                  const missing = missingById.get(text.id) ?? [];
                   return (
-                    <TableCell key={b.id} align="right" sx={CELL}>
-                      {p ? (
-                        <MeasurementValue point={p} />
-                      ) : gap ? (
-                        <GapText
-                          cause={gap.cause}
-                          missingTerms={gap.missingTerms}
-                        />
+                    <TableCell key={text.id} align="right" sx={CELL}>
+                      {text.similarity !== undefined ? (
+                        <MeasurementValue point={text} />
                       ) : (
-                        <Dash />
+                        <GapText
+                          missingTerms={terms.filter((t) =>
+                            missing.includes(t),
+                          )}
+                        />
                       )}
                     </TableCell>
                   );
@@ -96,16 +131,55 @@ export default function ResultsTable({ payload, allBooks, ranking }) {
   );
 }
 
+// Query first, then each type's terms in the backend's order.
+const byTypeThenRank = (a, b) =>
+  isQuery(b) - isQuery(a) ||
+  TERM_TYPES.indexOf(a.type) - TERM_TYPES.indexOf(b.type) ||
+  a.rank - b.rank;
+
+const FROZEN_COUNT = 1 + TERM_TYPES.length;
+const GROUP_LABEL_INSET = 16;
+
+function useFrozenOffsets(hasTable) {
+  const cells = useRef([]);
+  const [offsets, setOffsets] = useState(() => Array(FROZEN_COUNT + 1).fill(0));
+  useLayoutEffect(() => {
+    if (!hasTable) return;
+    const measure = () => {
+      let x = 0;
+      setOffsets([
+        0,
+        ...cells.current.map((c) => (x += c.getBoundingClientRect().width)),
+      ]);
+    };
+    const observer = new ResizeObserver(measure);
+    cells.current.forEach((c) => observer.observe(c));
+    return () => observer.disconnect();
+  }, [hasTable]);
+  return { cells, offsets };
+}
+
+const frozenCell = (left, isLast) => (theme) => ({
+  position: { sm: "sticky" },
+  left,
+  zIndex: 1,
+  bgcolor: "background.paper",
+  ".MuiTableRow-hover:hover > &": {
+    backgroundImage: `linear-gradient(${theme.palette.action.hover}, ${theme.palette.action.hover})`,
+  },
+  ...(isLast && { borderRight: `1px solid ${theme.palette.divider}` }),
+});
+
 const SWATCH_MIN_H = 2;
 
-function SeriesSwatch({ color, isQuery }) {
+function SeriesSwatch({ color, query }) {
   return (
     <Box
       sx={{
         width: 14,
         height: Math.max(
           SWATCH_MIN_H,
-          isQuery ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W,
+          query ? QUERY_STROKE_W : NEIGHBOUR_STROKE_W,
         ),
         bgcolor: color,
         borderRadius: 1,
@@ -115,113 +189,91 @@ function SeriesSwatch({ color, isQuery }) {
   );
 }
 
-// Only the sorted-on statistic gets a column, so the other one has nowhere else
-// to appear. It goes here rather than being dropped: the two are read against
-// each other -- a term can be stable and still be the one the books disagree
-// about -- and losing half that comparison to a dropdown toggle costs more than
-// a tooltip line.
-function TermCell({ series, ranking }) {
+function TermCell({ series }) {
+  const color = TERM_TYPE_COLOR[series.type];
   const term = (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <SeriesSwatch color={series.color} isQuery={series.isQuery} />
+      <SeriesSwatch color={color} query={isQuery(series)} />
       <Typography
         variant="body2"
-        sx={{ fontWeight: series.isQuery ? 700 : 500 }}
+        sx={{ fontWeight: isQuery(series) ? 700 : 500, color }}
       >
         {series.term}
       </Typography>
     </Box>
   );
 
-  if (!series.stats) return term;
+  if (!series.overall) return term;
 
-  const { n_books_in } = series.stats;
-  const other = ranking === "stability" ? "instability" : "stability";
   return (
-    <Tooltip
-      title={
-        `${labels.columns[other].short} ` +
-        `${series.stats[other].toFixed(3)} · measured across the ` +
-        `${n_books_in} book${n_books_in === 1 ? "" : "s"} that use it.`
-      }
-    >
+    <Tooltip title={labels.scatter.pointBooks(series.overall.n_books_in)}>
       <Box sx={{ cursor: "help", display: "inline-block" }}>{term}</Box>
     </Tooltip>
   );
 }
 
-function RankStatCell({ stats, stat }) {
-  if (!stats) return <Dash />;
+function StatCell({ overall, stat }) {
+  if (!overall) return <Dash />;
   return (
     <Typography variant="body2" sx={NUM}>
-      {stats[stat].toFixed(3)}
+      {overall[TERM_TYPE_STAT[stat]].toFixed(3)}
     </Typography>
   );
 }
 
 function MeasurementValue({ point }) {
-  const value = (
-    <Typography variant="body2" sx={NUM}>
-      {point.agreement.toFixed(3)}
-    </Typography>
-  );
-  if (!point.measurement) return value;
-
-  const { ci, occurrences, n_seeds } = point.measurement;
   return (
     <Tooltip
       title={
         <Box sx={{ fontVariantNumeric: "tabular-nums" }}>
-          <div>
-            95% CI [{ci[0].toFixed(3)}, {ci[1].toFixed(3)}]
-          </div>
-          <div>
-            {occurrences.toLocaleString()} uses · {n_seeds} seed
-            {n_seeds === 1 ? "" : "s"}
-          </div>
+          {point.occurrences.toLocaleString()} uses
         </Box>
       }
     >
-      <Box sx={{ cursor: "help", display: "inline-block" }}>{value}</Box>
-    </Tooltip>
-  );
-}
-
-function GapText({ cause, missingTerms }) {
-  const copy = labels.gaps[cause];
-  return (
-    <Tooltip title={`${copy.short} — ${copy.detail(missingTerms)}`}>
-      <Typography
-        variant="body2"
-        color="text.disabled"
-        sx={{ cursor: "help", borderBottom: "1px dotted currentColor" }}
-        component="span"
-      >
-        —
-      </Typography>
-    </Tooltip>
-  );
-}
-
-function HelpLabel({ short, help }) {
-  return (
-    <Tooltip title={help}>
-      <Box
-        component="span"
-        sx={{ cursor: "help", borderBottom: "1px dotted currentColor" }}
-      >
-        {short}
+      <Box sx={{ cursor: "help", display: "inline-block" }}>
+        <Typography variant="body2" sx={NUM}>
+          {point.similarity.toFixed(3)}
+        </Typography>
       </Box>
     </Tooltip>
   );
 }
 
+function Hint({ title, children, ...props }) {
+  return (
+    <Tooltip title={title}>
+      <Box component="span" sx={HELP} {...props}>
+        {children}
+      </Box>
+    </Tooltip>
+  );
+}
+
+function GapText({ missingTerms }) {
+  const copy = labels.gap;
+  return (
+    <Hint
+      title={`${copy.short} — ${copy.detail(missingTerms)}`}
+      color="text.disabled"
+    >
+      {DASH}
+    </Hint>
+  );
+}
+
+function HelpLabel({ short, help }) {
+  return <Hint title={help}>{short}</Hint>;
+}
+
 const Dash = () => (
   <Typography variant="body2" color="text.disabled">
-    —
+    {DASH}
   </Typography>
 );
 
+const DASH = "\u2014";
+const HELP = { cursor: "help", borderBottom: "1px dotted currentColor" };
 const HEAD = { fontWeight: 700 };
 const NUM = { fontVariantNumeric: "tabular-nums" };
+const NOWRAP = { whiteSpace: "nowrap" };
 const CELL = { py: 0.5 };
